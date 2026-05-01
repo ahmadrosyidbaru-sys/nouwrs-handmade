@@ -149,7 +149,6 @@
     <!-- Banner Slider -->
     <section class="hero">
         <div class="slider-wrapper">
-            <!-- Pastikan file foto1.png sampai foto5.png ada di folder yang sama -->
             <div class="slide" style="background-image: url('foto1.png');"></div>
             <div class="slide" style="background-image: url('foto2.png');"></div>
             <div class="slide" style="background-image: url('foto3.png');"></div>
@@ -166,7 +165,7 @@
     <section class="info-section">
         <div class="info-card">
             <i class="far fa-clock"></i>
-            <h3>Jam Opersaional</h3>
+            <h3>Jam Operasional</h3>
             <p>Senin - Sabtu: 09:00 - 18:00<br>Minggu: Libur</p>
         </div>
         <div class="info-card">
@@ -194,11 +193,25 @@
                     <div class="form-group">
                         <label>Jenis Buket</label>
                         <select id="tipe" required>
-                            <option value="">Pilih Koleksi</option>
-                            <option value="Bunga Segar">Bunga Kawat Bulu</option>
-                            <option value="Buket Uang">Buket Uang</option>
+                            <option value="">Pilih Jenis</option>
+                            <option value="Buket Bunga">Buket Bunga</option>
                             <option value="Buket Snack">Buket Snack</option>
-                            <option value="Lainnya">Custom Request</option>
+                            <option value="Buket Uang">Buket Uang</option>
+                            <option value="Buket Wisuda">Buket Wisuda</option>
+                            <option value="Buket Logam Mulia">Buket Logam Mulia</option>
+                            <option value="Buket Pita Satin">Buket Pita Satin</option>
+                            <option value="Buket Custom">Buket Custom</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Ukuran Buket</label>
+                        <select id="ukuran" required>
+                            <option value="">Pilih Ukuran</option>
+                            <option value="Single Buket">Single Buket</option>
+                            <option value="Small (S)">Small (S)</option>
+                            <option value="Medium (M)">Medium (M)</option>
+                            <option value="Large (L)">Large (L)</option>
+                            <option value="Extra Large (XL)">Extra Large (XL)</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -237,24 +250,25 @@
 
     <script>
         function kirimWhatsApp() {
-            // GANTI NOMOR DI BAWAH INI (Gunakan format 62...)
             const waAdmin = "6285217382062"; 
             
             const n = document.getElementById('nama').value;
             const t = document.getElementById('tipe').value;
+            const u = document.getElementById('ukuran').value;
             const d = document.getElementById('tgl').value;
             const b = document.getElementById('budget').value;
             const c = document.getElementById('catatan').value;
 
-            if(!n || !t || !d) {
-                alert("Mohon isi Nama, Jenis, dan Tanggal ya kak!");
+            if(!n || !t || !u || !d) {
+                alert("Mohon isi Nama, Jenis, Ukuran, dan Tanggal ya kak!");
                 return;
             }
 
             const teks = `*FORM PESANAN NOUWR'S*%0A` +
                          `------------------------------%0A` +
                          `*Nama:* ${n}%0A` +
-                         `*Order:* ${t}%0A` +
+                         `*Jenis:* ${t}%0A` +
+                         `*Ukuran:* ${u}%0A` +
                          `*Tanggal:* ${d}%0A` +
                          `*Budget:* Rp ${b || '-'}%0A` +
                          `*Catatan:* ${c || '-'}%0A` +
@@ -265,4 +279,4 @@
         }
     </script>
 </body>
-</html>	
+</html>
