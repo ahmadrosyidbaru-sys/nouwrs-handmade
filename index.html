@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nouwr's Handmade | Buket Estetik</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --biru-utama: #3a6073; 
+            --biru-muda: #bed7dc;  
+            --bg-halus: #f8fbfe;      
+            --teks-gelap: #2c3e50;
+            --putih: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background-color: var(--bg-halus); 
+            color: var(--teks-gelap); 
+            font-family: 'Montserrat', sans-serif; 
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1, h2, h3, .logo { font-family: 'Playfair Display', serif; }
+
+        /* --- Navigasi --- */
+        nav {
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 15px 5%;
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--biru-muda);
+        }
+        .logo { font-size: 1.5rem; color: var(--biru-utama); font-style: italic; text-decoration: none; }
+        .nav-social { text-decoration: none; color: var(--biru-utama); display: flex; align-items: center; gap: 6px; }
+        .nav-social span { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .nav-social i { font-size: 1.2rem; }
+
+        /* --- Hero Slider --- */
+        .hero {
+            position: relative; height: 60vh; width: 100%; overflow: hidden;
+            display: flex; justify-content: center; align-items: center; color: white; text-align: center;
+        }
+        .slider-wrapper {
+            position: absolute; top: 0; left: 0; width: 500%; height: 100%; display: flex; z-index: -2;
+            animation: slide-animation 20s infinite ease-in-out;
+        }
+        .slide { 
+            width: 100%; height: 100%; 
+            background-size: cover; 
+            background-position: center; 
+            background-repeat: no-repeat;
+        }
+        .hero::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.35); z-index: -1; }
+        
+        .hero-content h1 { font-size: 2.5rem; line-height: 1.1; margin-bottom: 8px; }
+        .hero-content p { font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase; font-weight: 300; }
+
+        @keyframes slide-animation {
+            0%, 16% { transform: translateX(0%); }
+            20%, 36% { transform: translateX(-20%); }
+            40%, 56% { transform: translateX(-40%); }
+            60%, 76% { transform: translateX(-60%); }
+            80%, 96% { transform: translateX(-80%); }
+            100% { transform: translateX(0%); }
+        }
+
+        /* --- Kartu Informasi --- */
+        .info-section { 
+            display: grid; grid-template-columns: 1fr; gap: 15px; 
+            padding: 0 5% 40px; margin-top: -40px; position: relative; z-index: 10; 
+        }
+        .info-card { 
+            background: var(--putih); padding: 25px 20px; 
+            border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
+            text-align: center; border-top: 4px solid var(--biru-utama); 
+        }
+        .info-card i { font-size: 1.5rem; color: var(--biru-utama); margin-bottom: 15px; }
+        .info-card h3 { font-size: 0.95rem; margin-bottom: 8px; color: var(--biru-utama); text-transform: uppercase; }
+        .info-card p { font-size: 0.85rem; color: #666; line-height: 1.5; }
+
+        /* --- Formulir --- */
+        .order-section { padding: 40px 5%; }
+        .form-box { background: var(--putih); padding: 30px 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.03); }
+        .form-box h2 { font-size: 1.8rem; text-align: center; color: var(--biru-utama); margin-bottom: 30px; }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.7rem; text-transform: uppercase; color: var(--biru-utama); }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 12px 15px; border: 1.5px solid #eee; border-radius: 10px; 
+            background: #fafafa; font-size: 16px; 
+            font-family: 'Montserrat', sans-serif; transition: 0.3s;
+        }
+        .form-group input:focus { outline: none; border-color: var(--biru-utama); background: #fff; }
+
+        .btn-kirim { 
+            width: 100%; background: var(--biru-utama); color: white; 
+            padding: 18px; border: none; border-radius: 50px; 
+            font-size: 0.9rem; font-weight: 600; text-transform: uppercase; 
+            letter-spacing: 1px; cursor: pointer; margin-top: 25px; 
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+
+        /* --- Bagian Bantuan --- */
+        .bantuan-section { padding: 50px 5%; text-align: center; background: #fff; }
+        .bantuan-section h3 { font-size: 1.5rem; color: var(--biru-utama); margin-bottom: 10px; }
+        .bantuan-section p { font-size: 0.9rem; color: #777; margin-bottom: 20px; }
+        .btn-wa-tanya {
+            display: inline-flex; align-items: center; gap: 10px;
+            background: transparent; color: #25d366; border: 2px solid #25d366;
+            padding: 12px 30px; border-radius: 50px; text-decoration: none;
+            font-weight: 600; font-size: 0.9rem;
+        }
+
+        /* --- Footer --- */
+        footer { text-align: center; padding: 40px 20px; background: var(--biru-utama); color: #fff; }
+        .footer-logo { font-size: 1.5rem; font-style: italic; margin-bottom: 10px; }
+        footer p { font-size: 0.75rem; opacity: 0.8; }
+
+        /* --- Desktop Optimization --- */
+        @media (min-width: 768px) {
+            nav { padding: 20px 8%; }
+            .hero { height: 80vh; }
+            .hero-content h1 { font-size: 4rem; }
+            .info-section { grid-template-columns: repeat(3, 1fr); padding: 0 8% 50px; }
+            .form-grid { grid-template-columns: 1fr 1fr; }
+            .full { grid-column: span 2; }
+            .order-section { padding: 60px 15%; }
+            .form-box { padding: 50px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="#" class="logo">Nouwr's Gift.</a>
+        <a href="https://instagram.com/nouwr.s_gift" target="_blank" class="nav-social">
+            <span>Katalog</span>
+            <i class="fab fa-instagram"></i>
+        </a>
+    </nav>
+
+    <!-- Banner Slider -->
+    <section class="hero">
+        <div class="slider-wrapper">
+            <!-- Pastikan file foto1.png sampai foto5.png ada di folder yang sama -->
+            <div class="slide" style="background-image: url('foto1.png');"></div>
+            <div class="slide" style="background-image: url('foto2.png');"></div>
+            <div class="slide" style="background-image: url('foto3.png');"></div>
+            <div class="slide" style="background-image: url('foto4.png');"></div>
+            <div class="slide" style="background-image: url('foto5.png');"></div>
+        </div>
+        <div class="hero-content">
+            <p>Seni dalam Setiap Rangkaian</p>
+            <h1>Indah &<br>Berkesan</h1>
+        </div>
+    </section>
+
+    <!-- Info -->
+    <section class="info-section">
+        <div class="info-card">
+            <i class="far fa-clock"></i>
+            <h3>Jam Opersaional</h3>
+            <p>Senin - Sabtu: 09:00 - 18:00<br>Minggu: Libur</p>
+        </div>
+        <div class="info-card">
+            <i class="fas fa-truck"></i>
+            <h3>Pengiriman</h3>
+            <p>Serang - Cilegon dan sekitarnya<br>Packing Aman & Terjaga</p>
+        </div>
+        <div class="info-card">
+            <i class="far fa-heart"></i>
+            <h3>Custom Order</h3>
+            <p>Request warna & budget<br>sesuai keinginan Anda</p>
+        </div>
+    </section>
+
+    <!-- Form Pemesanan -->
+    <section class="order-section">
+        <div class="form-box">
+            <h2>Pesan Buket</h2>
+            <form id="orderForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Nama Lengkap</label>
+                        <input type="text" id="nama" placeholder="Nama Anda" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Jenis Buket</label>
+                        <select id="tipe" required>
+                            <option value="">Pilih Koleksi</option>
+                            <option value="Bunga Segar">Bunga Kawat Bulu</option>
+                            <option value="Buket Uang">Buket Uang</option>
+                            <option value="Buket Snack">Buket Snack</option>
+                            <option value="Lainnya">Custom Request</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tanggal Acara</label>
+                        <input type="date" id="tgl" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Budget (Rp)</label>
+                        <input type="number" id="budget" placeholder="Contoh: 150000">
+                    </div>
+                    <div class="form-group full">
+                        <label>Detail Pesanan</label>
+                        <textarea id="catatan" rows="3" placeholder="Warna, tulisan kartu, dll..."></textarea>
+                    </div>
+                </div>
+                <button type="button" onclick="kirimWhatsApp()" class="btn-kirim">
+                    <i class="fab fa-whatsapp"></i> Kirim Pesanan
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Bantuan -->
+    <section class="bantuan-section">
+        <h3>Masih Bingung?</h3>
+        <p>Konsultasi gratis dengan admin kami.</p>
+        <a href="https://wa.me/6285217382062?text=Halo%20Nouwr's%20Handmade,%20saya%20mau%20tanya%20dulu%20ya.." target="_blank" class="btn-wa-tanya">
+            <i class="fab fa-whatsapp"></i> Chat Sekarang
+        </a>
+    </section>
+
+    <footer>
+        <div class="footer-logo">Nouwr's.</div>
+        <p>&copy; 2026 Nouwr's Handmade.<br>Dibuat dengan cinta untuk momen berharga Anda.</p>
+    </footer>
+
+    <script>
+        function kirimWhatsApp() {
+            // GANTI NOMOR DI BAWAH INI (Gunakan format 62...)
+            const waAdmin = "6285217382062"; 
+            
+            const n = document.getElementById('nama').value;
+            const t = document.getElementById('tipe').value;
+            const d = document.getElementById('tgl').value;
+            const b = document.getElementById('budget').value;
+            const c = document.getElementById('catatan').value;
+
+            if(!n || !t || !d) {
+                alert("Mohon isi Nama, Jenis, dan Tanggal ya kak!");
+                return;
+            }
+
+            const teks = `*FORM PESANAN NOUWR'S*%0A` +
+                         `------------------------------%0A` +
+                         `*Nama:* ${n}%0A` +
+                         `*Order:* ${t}%0A` +
+                         `*Tanggal:* ${d}%0A` +
+                         `*Budget:* Rp ${b || '-'}%0A` +
+                         `*Catatan:* ${c || '-'}%0A` +
+                         `------------------------------%0A` +
+                         `Mohon dibantu proses ya, Kak!`;
+
+            window.open(`https://wa.me/${waAdmin}?text=${teks}`, '_blank');
+        }
+    </script>
+</body>
+</html>	
