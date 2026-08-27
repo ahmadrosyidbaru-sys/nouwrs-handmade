@@ -1,790 +1,744 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="h-full bg-laut-900 text-laut-100">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PDF Studio | Pro Document Compiler</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#021024">
+  <title>HT KP Nelayan</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            laut: {
+              950: '#010812',
+              900: '#021024',
+              800: '#052659',
+              700: '#5483B3',
+              300: '#7DA0CA',
+              100: '#C1E8FF'
+            },
+            oranye: {
+              500: '#FF7A00',
+              600: '#E66D00'
+            },
+            hijau: '#11B846',
+            merah: '#E33535'
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Courier New', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- PeerJS for WebRTC Mesh Audio -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- QRCode.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    /* Mencegah zoom dan efek scroll karet di HP */
+    body {
+      touch-action: manipulation;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      overscroll-behavior-y: none;
+    }
     
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    /* Efek Layar HT */
+    .layar-ht {
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+      background: linear-gradient(180deg, #C1E8FF 0%, #7DA0CA 100%);
+      color: #021024;
+    }
+
+    /* Animasi Tombol Bicara */
+    .tombol-ptt {
+      transition: all 0.15s ease-out;
+      box-shadow: 0 12px 0 #E66D00, 0 15px 20px rgba(0,0,0,0.5);
+    }
     
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        playfair: ['"Playfair Display"', 'serif'],
-                        inter: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        black: '#0a0a0a',
-                        dark: '#171717',
-                        canvas: '#fafafa',
-                    }
-                }
-            }
-        }
-    </script>
+    .tombol-ptt:active, .tombol-ptt.aktif {
+      transform: translateY(12px);
+      box-shadow: 0 0 0 #E66D00, 0 3px 5px rgba(0,0,0,0.5);
+      background-color: #FF9500; /* Sedikit lebih terang saat ditekan */
+    }
 
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    .tombol-ptt-siaga {
+      transition: all 0.15s ease-out;
+      box-shadow: 0 12px 0 #052659, 0 15px 20px rgba(0,0,0,0.5);
+    }
+    
+    .tombol-ptt-siaga:active, .tombol-ptt-siaga.aktif {
+      transform: translateY(12px);
+      box-shadow: 0 0 0 #052659, 0 3px 5px rgba(0,0,0,0.5);
+    }
 
-    <style>
-        body {
-            background-color: #fafafa;
-            background-image: radial-gradient(#d4d4d4 1px, transparent 1px);
-            background-size: 24px 24px;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent; 
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #d1d5db; 
-            border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #9ca3af; 
-        }
-
-        .sortable-ghost {
-            opacity: 0.2;
-            background-color: #f3f4f6;
-            border: 2px dashed #0a0a0a;
-            border-radius: 0.5rem;
-            transform: scale(0.98);
-        }
-        
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.88);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(0,0,0,0.06);
-        }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .animate-fade-in-up {
-            animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            opacity: 0;
-        }
-        
-        @keyframes floatUpDown {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-8px); }
-        }
-        .animate-float {
-            animation: floatUpDown 2.5s ease-in-out infinite;
-        }
-    </style>
+    /* Gelombang Sinyal */
+    @keyframes sinyal-kedip {
+      0% { opacity: 1; }
+      50% { opacity: 0.3; }
+      100% { opacity: 1; }
+    }
+    .animasi-sinyal {
+      animation: sinyal-kedip 1s infinite ease-in-out;
+    }
+  </style>
 </head>
-<body class="text-black font-inter min-h-screen flex flex-col relative selection:bg-black selection:text-white pb-36 sm:pb-32">
 
-    <div id="splashScreen" class="fixed inset-0 bg-black text-white z-[120] flex flex-col items-center justify-center p-4 transition-all duration-700">
-        <div class="flex flex-col items-center text-center max-w-sm w-full animate-fade-in-up">
-            <div class="w-16 h-16 bg-white text-black rounded-2xl flex items-center justify-center mb-6 shadow-2xl transform animate-bounce">
-                <i class="ph-fill ph-file-pdf text-3xl"></i>
-            </div>
-            <h2 class="font-playfair text-2xl sm:text-3xl font-bold tracking-tight mb-2">PDF Studio Pro</h2>
-            <p id="splashStatus" class="text-xs sm:text-sm text-gray-400 font-medium mb-6 h-5">Menginisialisasi sistem multi-platform...</p>
-            
-            <div class="w-48 bg-white/10 rounded-full h-1 overflow-hidden">
-                <div id="splashProgressBar" class="bg-white h-1 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
-            </div>
+<body class="h-full flex flex-col justify-between max-w-md mx-auto bg-laut-900 border-x border-laut-800 shadow-2xl relative overflow-hidden select-none">
+
+  <header class="p-4 bg-laut-800 flex items-center justify-between z-10 shadow-lg">
+    <div class="flex items-center space-x-3">
+      <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
+        <i class="fa-solid fa-anchor text-laut-800 text-2xl"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold text-white tracking-wide">HT KP NELAYAN</h1>
+        <div class="flex items-center gap-1.5 mt-0.5">
+          <div id="statusLed" class="w-2.5 h-2.5 rounded-full bg-hijau"></div>
+          <p class="text-xs text-laut-100" id="teksKoneksi">Terhubung ke Radio</p>
         </div>
+      </div>
+    </div>
+    
+    <button id="btnPengaturan" class="p-3 bg-laut-900 hover:bg-laut-950 active:scale-95 text-white rounded-xl shadow-inner border border-laut-700">
+      <i class="fa-solid fa-gear text-lg"></i>
+    </button>
+  </header>
+
+  <main class="flex-1 p-4 flex flex-col space-y-4 overflow-hidden relative">
+    
+    <!-- Layar LCD HT -->
+    <div class="layar-ht rounded-xl p-4 border-4 border-laut-800 flex flex-col justify-between relative overflow-hidden z-10 min-h-[160px]">
+      
+      <!-- Info Jalur & Sinyal -->
+      <div class="flex justify-between items-start font-bold mb-2 border-b-2 border-laut-700/30 pb-2">
+        <div>
+          <span class="text-xs uppercase tracking-wider text-laut-800/80">JALUR FREKUENSI</span>
+          <div id="tampilJalur" class="text-xl flex items-center gap-2">
+            <i class="fa-solid fa-tower-broadcast"></i> LAUT-01
+          </div>
+        </div>
+        <div class="text-right">
+          <span class="text-xs uppercase tracking-wider text-laut-800/80">ANGGOTA AKTIF</span>
+          <div class="text-xl flex items-center justify-end gap-2">
+            <i class="fa-solid fa-users"></i> <span id="tampilJumlahAnggota">1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Komunikasi (Siaga/Bicara) -->
+      <div class="my-auto text-center py-2">
+        <div id="teksStatus" class="text-sm font-bold uppercase mb-1 text-laut-800">
+          STATUS RADIO
+        </div>
+        <div id="teksAktivitas" class="text-3xl font-black tracking-wider truncate">
+          SIAGA
+        </div>
+        <div id="teksNamaPanggilan" class="text-sm font-bold text-laut-800 mt-2 bg-white/30 inline-block px-3 py-1 rounded-full">
+          NAMA: SAYA SENDIRI
+        </div>
+      </div>
     </div>
 
-    <div id="welcomeModal" class="fixed inset-0 bg-black/70 backdrop-blur-xl z-[110] flex items-center justify-center p-4 transition-all duration-500 opacity-0 pointer-events-none">
-        <div class="bg-white/95 backdrop-blur-2xl rounded-3xl max-w-lg w-full p-6 sm:p-10 shadow-2xl border border-black/10 transform transition-all duration-500 scale-95 flex flex-col items-center text-center relative overflow-hidden" id="welcomeModalCard">
-            <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-black via-gray-600 to-black"></div>
-            
-            <div class="w-16 h-16 bg-black text-white rounded-2xl flex items-center justify-center mb-6 shadow-xl transform hover:rotate-3 transition-transform duration-300">
-                <i class="ph-fill ph-file-pdf text-3xl"></i>
-            </div>
-            
-            <div class="inline-flex items-center gap-1.5 bg-black/5 text-black text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-3 border border-black/10">
-                <i class="ph ph-sparkle text-xs"></i>
-                <span>Universal Document Suite</span>
-            </div>
-            
-            <h2 class="font-playfair text-25px sm:text-4xl font-bold mb-3 text-dark tracking-tight">PDF Studio Professional</h2>
-            <p class="text-gray-500 text-xs sm:text-base leading-relaxed mb-6 sm:mb-8 font-medium max-w-sm">
-                Kompilasi gambar & dokumen PDF dengan standar industri. Berjalan sempurna di Mac, Windows, Linux, Android, dan iOS. 100% aman di perangkat Anda.
-            </p>
-            
-            <button id="closeWelcomeBtn" class="w-full bg-black text-white py-4 rounded-2xl font-bold text-sm tracking-wide hover:bg-gray-800 transition-all shadow-xl hover:shadow-2xl active:scale-95 flex items-center justify-center gap-3 cursor-pointer group">
-                <span>Mulai Menggunakan Studio</span>
-                <i class="ph ph-arrow-right text-lg group-hover:translate-x-1.5 transition-transform duration-300"></i>
+    <div class="bg-laut-800/50 rounded-xl p-3 border border-laut-700 flex flex-col flex-1 max-h-48">
+      <div class="flex justify-between items-center text-sm font-bold text-laut-100 mb-3 border-b border-laut-700 pb-2">
+        <span><i class="fa-solid fa-ship mr-2"></i> Kapal / Anggota di Jalur Ini</span>
+      </div>
+      
+      <div id="daftarAnggota" class="overflow-y-auto space-y-2 pr-1 flex-1 text-sm">
+        <!-- Template Anggota -->
+        <div class="flex justify-between items-center bg-laut-900 p-3 rounded-lg border-l-4 border-hijau shadow">
+          <span class="font-bold text-white">Saya (Nama Kapal)</span>
+          <span class="text-xs bg-hijau/20 text-hijau px-2 py-1 rounded">SIAGA</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="p-6 bg-laut-950 border-t-2 border-laut-800 flex flex-col items-center justify-center relative pb-10">
+    
+    <!-- Indikator Visualisasi Suara -->
+    <div class="w-full h-8 mb-6 flex items-end justify-center gap-1 opacity-50" id="visualizerContainer">
+      <!-- Bar suara akan digenerate lewat JS -->
+    </div>
+
+    <!-- Tombol Push to Talk -->
+    <button id="tombolBicara" class="tombol-ptt-siaga w-full py-8 rounded-2xl bg-laut-700 text-white flex flex-col items-center justify-center cursor-pointer select-none border-2 border-laut-300">
+      <i id="ikonBicara" class="fa-solid fa-microphone text-5xl mb-3"></i>
+      <span id="labelBicara" class="text-2xl font-black tracking-wider uppercase">TEKAN UNTUK BICARA</span>
+    </button>
+
+    <div class="mt-6 text-center">
+      <p class="text-sm text-laut-300"><i class="fa-solid fa-circle-info"></i> Gantian ngomong, jangan bersamaan.</p>
+    </div>
+  </footer>
+
+  <div id="modalPengaturan" class="fixed inset-0 bg-laut-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-laut-900 border-2 border-laut-700 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
+      
+      <div class="bg-laut-800 p-4 flex justify-between items-center border-b border-laut-700">
+        <h3 class="font-bold text-white text-lg flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-oranye-500"></i> Pengaturan Radio
+        </h3>
+        <button id="btnTutupPengaturan" class="text-laut-100 hover:text-white p-2 bg-laut-900 rounded-lg">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-5">
+        <!-- Ganti Identitas & Jalur -->
+        <div class="space-y-4 bg-laut-800 p-4 rounded-xl border border-laut-700">
+          <div>
+            <label class="block text-sm font-bold text-laut-100 mb-2">Nama Kapal / Panggilan Anda</label>
+            <input type="text" id="inputNama" placeholder="Contoh: BERKAH LAUT 01" class="w-full bg-laut-950 border border-laut-700 rounded-lg px-4 py-3 text-white font-bold focus:border-oranye-500 outline-none text-lg uppercase">
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold text-laut-100 mb-2">Pilih Jalur (Frekuensi)</label>
+            <input type="text" id="inputJalur" placeholder="LAUT-01" class="w-full bg-laut-950 border border-laut-700 rounded-lg px-4 py-3 text-white font-bold focus:border-oranye-500 outline-none text-lg uppercase mb-2">
+            <button id="btnSimpanJalur" class="w-full bg-hijau hover:bg-green-600 text-white font-bold px-4 py-3 rounded-lg text-lg shadow-md active:translate-y-1 transition-transform">
+              <i class="fa-solid fa-check mr-2"></i> SIMPAN & GABUNG JALUR
             </button>
-            
-            <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-[11px] text-gray-400 font-medium">
-                <span class="flex items-center gap-1"><i class="ph-fill ph-shield-check text-green-600 text-sm"></i> 100% Client-Side</span>
-                <span>•</span>
-                <span class="flex items-center gap-1"><i class="ph-fill ph-device-mobile text-blue-600 text-sm"></i> Cross-Device</span>
-            </div>
+          </div>
         </div>
+
+        <!-- Bagikan Link -->
+        <div class="border-t border-laut-700 pt-4 flex flex-col items-center justify-center space-y-3">
+          <p class="text-sm text-laut-100 font-bold text-center">Ajak teman masuk ke jalur ini:</p>
+          <div id="qrcode" class="p-3 bg-white rounded-xl shadow-lg"></div>
+          <button id="btnBagikanLink" class="w-full bg-laut-700 hover:bg-laut-600 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 shadow-md">
+            <i class="fa-solid fa-share-nodes"></i> Bagikan Link Ke WhatsApp
+          </button>
+        </div>
+
+        <!-- Opsi Tambahan -->
+        <div class="flex justify-between items-center text-sm font-bold text-laut-100 pt-2">
+          <span>Suara Kresek Radio (Efek)</span>
+          <input type="checkbox" id="toggleKresek" checked class="w-6 h-6 accent-oranye-500">
+        </div>
+      </div>
     </div>
+  </div>
 
-    <div id="successModal" class="fixed inset-0 bg-black/70 backdrop-blur-xl z-[115] flex items-center justify-center p-4 transition-all duration-500 opacity-0 pointer-events-none">
-        <div class="bg-white/95 backdrop-blur-2xl rounded-3xl max-w-lg w-full p-6 sm:p-10 shadow-2xl border border-black/10 transform transition-all duration-500 scale-95 flex flex-col items-center text-center relative overflow-hidden" id="successModalCard">
-            <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-green-600 via-black to-green-600"></div>
-            
-            <div class="w-16 h-16 bg-green-600 text-white rounded-2xl flex items-center justify-center mb-6 shadow-xl transform animate-bounce">
-                <i class="ph-fill ph-check-circle text-3xl"></i>
-            </div>
-            
-            <div class="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-widest mb-3 border border-green-200">
-                <i class="ph ph-seal-check text-xs"></i>
-                <span>Komplikasi Selesai</span>
-            </div>
-            
-            <h2 class="font-playfair text-25px sm:text-4xl font-bold mb-3 text-dark tracking-tight">PDF Anda Siap!</h2>
-            <p class="text-gray-500 text-xs sm:text-base leading-relaxed mb-6 font-medium max-w-sm">
-                Terima kasih telah menggunakan PDF Studio. Dokumen Anda telah berhasil digabungkan dengan aman dan optimal.
-            </p>
+  <script>
+    // State Aplikasi
+    const APP = {
+      nama: localStorage.getItem('ht_kp_nama') || 'NELAYAN-' + Math.floor(100 + Math.random() * 900),
+      jalur: ambilJalurDariUrl() || 'LAUT-01',
+      peer: null,
+      idSaya: null,
+      streamSaya: null,
+      koneksiData: new Map(), // PeerID -> DataConnection
+      panggilanSuara: new Map(), // PeerID -> MediaCall
+      anggotaAktif: new Map(), // PeerID -> { nama: string }
+      sedangBicara: false,
+      sedangMendengar: false,
+      namaPembicaraAktif: null,
+      audioCtx: null,
+      analyserNode: null,
+      efekKresekAktif: true
+    };
 
-            <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 w-full mb-6 text-left flex flex-col gap-2">
-                <div class="flex items-center gap-2 text-xs font-semibold text-dark">
-                    <i class="ph ph-info text-base text-black"></i>
-                    <span>Petunjuk Unduhan:</span>
-                </div>
-                <p class="text-[11px] text-gray-500 leading-relaxed">
-                    Ketuk tombol di bawah untuk mengunduh file ke perangkat Anda. Pengguna iOS/Safari dapat mengetuk tombol "Bagikan" lalu pilih <span class="text-black font-semibold">"Simpan ke File"</span>.
-                </p>
-            </div>
-            
-            <div class="flex flex-col sm:flex-row gap-3 w-full">
-                <button id="downloadFinalBtn" class="flex-grow bg-black text-white py-4 rounded-2xl font-bold text-sm tracking-wide hover:bg-gray-800 transition-all shadow-xl hover:shadow-2xl active:scale-95 flex items-center justify-center gap-3 cursor-pointer group">
-                    <i class="ph ph-download-simple text-lg group-hover:translate-y-0.5 transition-transform"></i>
-                    <span>Unduh PDF Sekarang</span>
-                </button>
-                <button id="closeSuccessBtn" class="bg-gray-100 hover:bg-gray-200 text-dark py-4 px-6 rounded-2xl font-bold text-sm transition-all cursor-pointer">
-                    Tutup
-                </button>
-            </div>
-            
-            <div class="mt-6 flex items-center justify-center gap-2 text-[11px] text-gray-400 font-medium">
-                <i class="ph-fill ph-heart text-red-500"></i> Dibuat untuk produktivitas Anda
-            </div>
-        </div>
-    </div>
+    function ambilJalurDariUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('jalur') ? params.get('jalur').toUpperCase() : null;
+    }
 
-    <div id="toastContainer" class="fixed top-20 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col gap-2 w-full max-w-sm px-4 pointer-events-none"></div>
+    // Elemen DOM
+    const ui = {
+      statusLed: document.getElementById('statusLed'),
+      teksKoneksi: document.getElementById('teksKoneksi'),
+      tampilJalur: document.getElementById('tampilJalur'),
+      tampilJumlahAnggota: document.getElementById('tampilJumlahAnggota'),
+      teksStatus: document.getElementById('teksStatus'),
+      teksAktivitas: document.getElementById('teksAktivitas'),
+      teksNamaPanggilan: document.getElementById('teksNamaPanggilan'),
+      daftarAnggota: document.getElementById('daftarAnggota'),
+      
+      tombolBicara: document.getElementById('tombolBicara'),
+      ikonBicara: document.getElementById('ikonBicara'),
+      labelBicara: document.getElementById('labelBicara'),
+      visualizerContainer: document.getElementById('visualizerContainer'),
+      
+      modalPengaturan: document.getElementById('modalPengaturan'),
+      inputNama: document.getElementById('inputNama'),
+      inputJalur: document.getElementById('inputJalur')
+    };
 
-    <nav class="fixed top-0 left-0 right-0 glass-panel z-40 border-b border-gray-200">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-black text-white flex items-center justify-center rounded-md shadow-sm">
-                    <i class="ph-fill ph-file-pdf text-xl"></i>
-                </div>
-                <span class="font-playfair font-bold text-lg sm:text-xl tracking-wide">PDF Studio</span>
-                <span class="bg-black/5 text-black text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ml-1 sm:ml-2 border border-black/10">Pro</span>
-            </div>
-            <div class="hidden sm:flex items-center gap-6 text-sm font-medium text-gray-500">
-                <span class="text-xs text-gray-400 font-mono">v2.5 Universal Engine</span>
-            </div>
-        </div>
-    </nav>
+    function siapkanAudio() {
+      if (!APP.audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        APP.audioCtx = new AudioContext();
+        APP.analyserNode = APP.audioCtx.createAnalyser();
+        APP.analyserNode.fftSize = 32; // Lebih kecil = bar visualizer lebih sedikit & besar
+      }
+      if (APP.audioCtx.state === 'suspended') {
+        APP.audioCtx.resume();
+      }
+    }
 
-    <main class="flex-grow flex flex-col items-center w-full max-w-5xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32">
+    // Bunyi Kresek (Squelch) khas HT saat mulai/berhenti bicara
+    function bunyiKresekHT() {
+      if (!APP.efekKresekAktif || !APP.audioCtx) return;
+      try {
+        const bufferSize = APP.audioCtx.sampleRate * 0.1; // 100ms
+        const buffer = APP.audioCtx.createBuffer(1, bufferSize, APP.audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1; // White noise
+        }
         
-        <header class="w-full text-center mb-8 sm:mb-10">
-            <h1 class="font-playfair text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-3 sm:mb-4 text-dark">Kompilasi Dokumen</h1>
-            <p class="text-gray-500 font-medium text-xs sm:text-sm md:text-base max-w-xl mx-auto leading-relaxed px-2">
-                Gabungkan berbagai format gambar dan dokumen menjadi satu file PDF profesional. 
-                <span class="text-black font-semibold">Mendukung semua perangkat & browser</span>.
-            </p>
-        </header>
-
-        <!-- Hidden Universal File Input -->
-        <input type="file" id="fileInput" multiple accept="image/jpeg, image/png, image/webp, application/pdf" class="hidden">
-
-        <div id="dropzone" class="w-full bg-white border-2 border-dashed border-gray-300 hover:border-black hover:shadow-lg transition-all duration-300 rounded-2xl flex flex-col items-center justify-center p-6 sm:p-12 cursor-pointer group shadow-sm">
-            <div class="w-14 h-14 sm:w-16 sm:h-16 bg-gray-50 rounded-full flex items-center justify-center group-hover:bg-black group-hover:text-white transition-colors duration-300 mb-3 sm:mb-4 border border-gray-100 group-hover:border-black animate-float">
-                <i class="ph ph-upload-simple text-2xl sm:text-3xl text-gray-400 group-hover:text-white transition-transform duration-300 group-hover:scale-110"></i>
-            </div>
-            <p class="font-semibold text-base sm:text-lg text-dark group-hover:-translate-y-1 transition-transform duration-300 text-center">Tarik atau sentuh file di sini</p>
-            <p class="text-xs sm:text-sm text-gray-500 mt-1 mb-4 text-center group-hover:-translate-y-1 transition-transform duration-300">untuk <span class="text-black underline decoration-2 underline-offset-4 font-semibold hover:text-gray-700 transition-colors">Pilih dari Perangkat</span></p>
-            
-            <div class="flex gap-2">
-                <span class="text-[10px] sm:text-[11px] font-medium text-gray-500 bg-gray-100 py-1 px-2 rounded-md">JPG, PNG, WEBP</span>
-                <span class="text-[10px] sm:text-[11px] font-medium text-gray-500 bg-gray-100 py-1 px-2 rounded-md">PDF</span>
-            </div>
-        </div>
-
-        <div id="actionToolbar" class="w-full mt-8 sm:mt-12 hidden opacity-0 transition-opacity duration-500 bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col gap-4">
-            
-            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-                <div class="flex items-center gap-2">
-                    <div class="p-2 bg-gray-100 rounded-lg text-black">
-                        <i class="ph ph-sliders-horizontal text-lg"></i>
-                    </div>
-                    <div>
-                        <h2 class="font-semibold text-sm text-dark">Pengaturan Dokumen PDF</h2>
-                        <p class="text-[11px] text-gray-500">Format & orientasi diterapkan otomatis</p>
-                    </div>
-                </div>
-                
-                <button id="clearAllBtn" class="text-xs sm:text-sm font-semibold text-gray-400 hover:text-red-600 transition-colors flex items-center gap-1 bg-gray-50 hover:bg-red-50 px-3 py-2 rounded-lg border border-gray-100 hover:border-red-200 justify-center">
-                    <i class="ph ph-trash"></i> <span class="hidden sm:inline">Hapus Semua</span><span class="sm:hidden">Reset</span>
-                </button>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full">
-                <div class="flex flex-col gap-1">
-                    <label class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Ukuran Kertas</label>
-                    <select id="paperSize" class="text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 sm:py-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black cursor-pointer font-medium w-full">
-                        <option value="A4">A4 (Standar Internasional)</option>
-                        <option value="LETTER">US Letter</option>
-                    </select>
-                </div>
-                
-                <div class="flex flex-col gap-1">
-                    <label class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Orientasi Halaman</label>
-                    <select id="orientation" class="text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 sm:py-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black cursor-pointer font-medium w-full">
-                        <option value="PORTRAIT">Potret (Berdiri)</option>
-                        <option value="LANDSCAPE">Lanskap (Tidur)</option>
-                    </select>
-                </div>
-
-                <div class="flex flex-col gap-1">
-                    <label class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Margin Tepi</label>
-                    <select id="marginSize" class="text-sm bg-gray-50 border border-gray-200 rounded-xl px-3 py-3 sm:py-2 focus:outline-none focus:ring-1 focus:ring-black focus:border-black cursor-pointer font-medium w-full">
-                        <option value="STANDARD">Standar (Normal)</option>
-                        <option value="NONE">Tanpa Margin (Penuh)</option>
-                        <option value="LARGE">Lebar (Eksklusif)</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <div class="w-full mt-6 mb-16">
-            <div id="previewContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 empty:hidden custom-scrollbar"></div>
-        </div>
-
-    </main>
-
-    <div id="floatingActionBar" class="fixed bottom-0 left-0 right-0 glass-panel border-t border-gray-200 p-4 sm:p-5 transform translate-y-full transition-transform duration-500 ease-out z-40 shadow-2xl">
-        <div class="max-w-5xl mx-auto flex items-center justify-between gap-3">
-            <div class="flex flex-col">
-                <span class="text-xs sm:text-sm font-bold text-dark truncate max-w-[170px] sm:max-w-none" id="fileCountDisplay">0 Dokumen Siap</span>
-                <span class="text-[11px] text-gray-500 hidden sm:inline">Tarik / geser kartu untuk mengubah urutan halaman</span>
-                <span class="text-[10px] text-gray-400 sm:hidden">Sentuh & geser urutan</span>
-            </div>
-            
-            <button id="generateBtn" class="bg-black text-white px-6 sm:px-8 py-3.5 sm:py-3 rounded-xl font-bold tracking-wide text-xs sm:text-sm hover:bg-gray-800 hover:shadow-xl active:scale-95 transition-all focus:outline-none flex items-center justify-center gap-2 shadow-lg shrink-0 cursor-pointer">
-                <i class="ph ph-magic-wand text-base sm:text-lg"></i>
-                <span>Jadikan PDF</span>
-            </button>
-        </div>
-    </div>
-
-    <div id="loadingOverlay" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[115] hidden flex-col items-center justify-center text-white transition-opacity duration-300 opacity-0 px-4">
-        <div class="bg-white text-black p-6 sm:p-8 rounded-3xl shadow-2xl max-w-sm w-full mx-auto flex flex-col items-center text-center transform scale-95 transition-transform duration-300" id="loadingModal">
-            <div class="relative w-16 h-16 mb-6">
-                <svg class="animate-spin w-full h-full text-gray-200" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <i class="ph-fill ph-file-pdf absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl text-black"></i>
-            </div>
-            
-            <h3 class="font-playfair text-xl font-bold mb-2">Merakit PDF...</h3>
-            <p id="progressText" class="text-sm text-gray-500 mb-6 font-medium">Menyiapkan dokumen lintas perangkat...</p>
-            
-            <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                <div id="progressBar" class="bg-black h-2.5 rounded-full transition-all duration-300 ease-out" style="width: 0%"></div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            const splashScreen = document.getElementById('splashScreen');
-            const splashStatus = document.getElementById('splashStatus');
-            const splashProgressBar = document.getElementById('splashProgressBar');
-            const welcomeModal = document.getElementById('welcomeModal');
-            const welcomeModalCard = document.getElementById('welcomeModalCard');
-            const closeWelcomeBtn = document.getElementById('closeWelcomeBtn');
-
-            const steps = [
-                { progress: '30%', text: 'Memuat modul kompilasi lokal...' },
-                { progress: '70%', text: 'Menyesuaikan orientasi & kanvas...' },
-                { progress: '100%', text: 'Sistem siap digunakan.' }
-            ];
-
-            let currentStep = 0;
-            const interval = setInterval(() => {
-                if (currentStep < steps.length) {
-                    splashProgressBar.style.width = steps[currentStep].progress;
-                    splashStatus.innerText = steps[currentStep].text;
-                    currentStep++;
-                } else {
-                    clearInterval(interval);
-                    splashScreen.classList.add('opacity-0', 'pointer-events-none');
-                    setTimeout(() => {
-                        splashScreen.remove();
-                        welcomeModal.classList.remove('opacity-0', 'pointer-events-none');
-                        welcomeModalCard.classList.remove('scale-95');
-                        welcomeModalCard.classList.add('scale-100');
-                    }, 400);
-                }
-            }, 250);
-
-            closeWelcomeBtn.addEventListener('click', () => {
-                welcomeModal.classList.add('opacity-0');
-                welcomeModalCard.classList.remove('scale-100');
-                welcomeModalCard.classList.add('scale-95');
-                setTimeout(() => {
-                    welcomeModal.classList.add('hidden', 'pointer-events-none');
-                }, 400);
-            });
-        });
-
-        const dropzone = document.getElementById('dropzone');
-        const fileInput = document.getElementById('fileInput');
-        const previewContainer = document.getElementById('previewContainer');
-        const actionToolbar = document.getElementById('actionToolbar');
-        const floatingActionBar = document.getElementById('floatingActionBar');
-        const fileCountDisplay = document.getElementById('fileCountDisplay');
-        const generateBtn = document.getElementById('generateBtn');
-        const clearAllBtn = document.getElementById('clearAllBtn');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-        const toastContainer = document.getElementById('toastContainer');
+        const noise = APP.audioCtx.createBufferSource();
+        noise.buffer = buffer;
         
-        const successModal = document.getElementById('successModal');
-        const successModalCard = document.getElementById('successModalCard');
-        const downloadFinalBtn = document.getElementById('downloadFinalBtn');
-        const closeSuccessBtn = document.getElementById('closeSuccessBtn');
+        const filter = APP.audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1500;
+        
+        const gain = APP.audioCtx.createGain();
+        gain.gain.setValueAtTime(0.2, APP.audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, APP.audioCtx.currentTime + 0.08);
+        
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(APP.audioCtx.destination);
+        
+        noise.start();
+      } catch (e) { console.warn('Efek suara gagal:', e); }
+    }
 
-        const elPaperSize = document.getElementById('paperSize');
-        const elOrientation = document.getElementById('orientation');
-        const elMarginSize = document.getElementById('marginSize');
+    // Bunyi "Tit-tit" saat selesai bicara (Roger Beep)
+    function bunyiSelesaiGanti() {
+      if (!APP.efekKresekAktif || !APP.audioCtx) return;
+      try {
+        const osc = APP.audioCtx.createOscillator();
+        const gain = APP.audioCtx.createGain();
+        osc.type = 'sine';
+        const now = APP.audioCtx.currentTime;
+        
+        osc.frequency.setValueAtTime(1000, now);
+        osc.frequency.setValueAtTime(1500, now + 0.05);
+        
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        
+        osc.connect(gain);
+        gain.connect(APP.audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      } catch (e) { console.warn('Efek suara roger beep gagal:', e); }
+    }
 
-        let filesData = [];
-        let sortableInstance = null;
-        let generatedPdfBlobUrl = null;
-        let generatedPdfName = 'PDF_Studio.pdf';
-
-        function formatBytes(bytes, decimals = 1) {
-            if (!+bytes) return '0 Bytes';
-            const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
-        }
-
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            const isError = type === 'error';
-            const bgColor = isError ? 'bg-red-50 text-red-700 border-red-200' : 'bg-black text-white border-black';
-            const icon = isError ? 'ph-warning-circle text-red-500' : 'ph-check-circle text-green-400';
-            
-            toast.className = `flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl border ${bgColor} transform transition-all duration-400 translate-y-[-20px] opacity-0 pointer-events-auto`;
-            toast.innerHTML = `
-                <i class="ph-fill ${icon} text-xl"></i>
-                <span class="text-sm font-semibold">${message}</span>
-            `;
-            
-            toastContainer.appendChild(toast);
-            
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    toast.classList.remove('translate-y-[-20px]', 'opacity-0');
-                }, 10);
-            });
-
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'scale-95', '-translate-y-4');
-                setTimeout(() => toast.remove(), 400);
-            }, 3500);
-        }
-
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropzone.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
+    async function aktifkanMikrofon() {
+      try {
+        APP.streamSaya = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          },
+          video: false
         });
 
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+        // Mute mic bawaannya, baru dinyalakan saat tombol PTT ditekan
+        APP.streamSaya.getAudioTracks().forEach(track => track.enabled = false);
 
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropzone.addEventListener(eventName, highlight, false);
+        siapkanAudio();
+        const source = APP.audioCtx.createMediaStreamSource(APP.streamSaya);
+        source.connect(APP.analyserNode);
+        
+        return true;
+      } catch (err) {
+        console.error('Gagal akses mic:', err);
+        alert('Mohon izinkan akses Mikrofon agar bisa dipakai berbicara.');
+        return false;
+      }
+    }
+
+    function sambungkanKeJaringan() {
+      ui.teksKoneksi.innerText = "Mencari sinyal...";
+      ui.statusLed.className = "w-2.5 h-2.5 rounded-full bg-oranye-500 animasi-sinyal";
+
+      // Bikin ID unik tapi terikat dengan nama jalur agar gampang saling ketemu
+      const namaJalurBersih = APP.jalur.replace(/[^A-Z0-9]/gi, '').toUpperCase();
+      const acak = Math.random().toString(36).substring(2, 6);
+      APP.idSaya = `htnelayan-${namaJalurBersih}-${acak}`;
+
+      // Koneksi ke server PeerJS publik
+      APP.peer = new Peer(APP.idSaya, { debug: 1 });
+
+      APP.peer.on('open', (id) => {
+        ui.teksKoneksi.innerText = "Sinyal Bagus";
+        ui.statusLed.className = "w-2.5 h-2.5 rounded-full bg-hijau";
+        perbaruiTampilan();
+        
+        // Broadcast kehadiran ke semua yang mungkin konek
+        kirimDataKeSemua({ tipe: 'MASUK', idPeer: APP.idSaya, nama: APP.nama });
+      });
+
+      // Menerima sambungan data (untuk teks/sinyal tombol)
+      APP.peer.on('connection', (koneksi) => {
+        aturKoneksiData(koneksi);
+      });
+
+      // Menerima panggilan suara
+      APP.peer.on('call', (panggilan) => {
+        panggilan.answer(APP.streamSaya);
+        panggilan.on('stream', (streamLain) => {
+          pasangAudioOrangLain(panggilan.peer, streamLain);
         });
+        APP.panggilanSuara.set(panggilan.peer, panggilan);
+      });
 
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropzone.addEventListener(eventName, unhighlight, false);
-        });
+      APP.peer.on('error', (err) => {
+        ui.teksKoneksi.innerText = "Sinyal Putus";
+        ui.statusLed.className = "w-2.5 h-2.5 rounded-full bg-merah";
+      });
+    }
 
-        function highlight() {
-            dropzone.classList.add('border-black', 'bg-gray-50', 'shadow-md');
+    function aturKoneksiData(koneksi) {
+      APP.koneksiData.set(koneksi.peer, koneksi);
+
+      koneksi.on('open', () => {
+        // Kenalan (kirim nama)
+        koneksi.send({ tipe: 'KENALAN', idPeer: APP.idSaya, nama: APP.nama });
+
+        // Mulai telepon audio di balik layar jika belum
+        if (!APP.panggilanSuara.has(koneksi.peer) && APP.streamSaya) {
+          const panggilan = APP.peer.call(koneksi.peer, APP.streamSaya);
+          panggilan.on('stream', (streamLain) => {
+            pasangAudioOrangLain(koneksi.peer, streamLain);
+          });
+          APP.panggilanSuara.set(koneksi.peer, panggilan);
         }
+      });
 
-        function unhighlight() {
-            dropzone.classList.remove('border-black', 'bg-gray-50', 'shadow-md');
+      koneksi.on('data', (data) => tanganiPesanMasuk(koneksi.peer, data));
+
+      koneksi.on('close', () => {
+        APP.koneksiData.delete(koneksi.peer);
+        APP.anggotaAktif.delete(koneksi.peer);
+        APP.panggilanSuara.delete(koneksi.peer);
+        hapusAudioOrangLain(koneksi.peer);
+        perbaruiDaftarAnggota();
+      });
+    }
+
+    function pasangAudioOrangLain(idPeer, stream) {
+      let elemenAudio = document.getElementById(`audio-${idPeer}`);
+      if (!elemenAudio) {
+        elemenAudio = document.createElement('audio');
+        elemenAudio.id = `audio-${idPeer}`;
+        elemenAudio.autoplay = true;
+        elemenAudio.playsInline = true;
+        document.body.appendChild(elemenAudio);
+      }
+      elemenAudio.srcObject = stream;
+    }
+
+    function hapusAudioOrangLain(idPeer) {
+      const elemenAudio = document.getElementById(`audio-${idPeer}`);
+      if (elemenAudio) elemenAudio.remove();
+    }
+
+    function tanganiPesanMasuk(idPeer, data) {
+      switch (data.tipe) {
+        case 'KENALAN':
+        case 'MASUK':
+          APP.anggotaAktif.set(idPeer, { nama: data.nama || 'Anggota Tidak Dikenal' });
+          perbaruiDaftarAnggota();
+          break;
+
+        case 'MULAI_BICARA':
+          if (APP.sedangBicara) return; // Abaikan jika kita yang lagi ngomong
+          APP.sedangMendengar = true;
+          APP.namaPembicaraAktif = data.nama;
+          bunyiKresekHT();
+          tampilanMendengar(true);
+          break;
+
+        case 'BERHENTI_BICARA':
+          APP.sedangMendengar = false;
+          APP.namaPembicaraAktif = null;
+          bunyiSelesaiGanti();
+          tampilanMendengar(false);
+          break;
+      }
+    }
+
+    function kirimDataKeSemua(data) {
+      APP.koneksiData.forEach((koneksi) => {
+        if (koneksi.open) koneksi.send(data);
+      });
+    }
+
+    function mulaiBicara() {
+      // Jika jalur dipakai orang, tidak bisa bicara (Half-Duplex)
+      if (APP.sedangMendengar) {
+        alert("Gantian! Ada yang sedang bicara.");
+        return;
+      }
+      if (APP.sedangBicara) return;
+
+      siapkanAudio();
+      if (navigator.vibrate) navigator.vibrate(50); // Getar HP
+      
+      APP.sedangBicara = true;
+      bunyiKresekHT();
+
+      // Nyalakan Mikrofon
+      if (APP.streamSaya) {
+        APP.streamSaya.getAudioTracks().forEach(track => track.enabled = true);
+      }
+
+      kirimDataKeSemua({ tipe: 'MULAI_BICARA', nama: APP.nama });
+      tampilanBicara(true);
+    }
+
+    function berhentiBicara() {
+      if (!APP.sedangBicara) return;
+      
+      if (navigator.vibrate) navigator.vibrate([30, 30]);
+
+      APP.sedangBicara = false;
+
+      // Matikan Mikrofon
+      if (APP.streamSaya) {
+        APP.streamSaya.getAudioTracks().forEach(track => track.enabled = false);
+      }
+
+      kirimDataKeSemua({ tipe: 'BERHENTI_BICARA', nama: APP.nama });
+      bunyiSelesaiGanti();
+      tampilanBicara(false);
+    }
+
+    function tampilanBicara(aktif) {
+      if (aktif) {
+        ui.tombolBicara.className = "tombol-ptt aktif w-full py-8 rounded-2xl bg-oranye-500 text-white flex flex-col items-center justify-center select-none border-2 border-oranye-600";
+        ui.ikonBicara.className = "fa-solid fa-microphone-lines text-5xl mb-3 text-white animasi-sinyal";
+        ui.labelBicara.innerText = "MENGIRIM SUARA...";
+        
+        ui.teksStatus.innerText = "ANDA SEDANG BICARA";
+        ui.teksStatus.className = "text-sm font-bold uppercase mb-1 text-oranye-600 animasi-sinyal";
+        ui.teksAktivitas.innerText = "SUARA TERKIRIM";
+        ui.teksAktivitas.className = "text-3xl font-black tracking-wider text-oranye-600";
+      } else {
+        ui.tombolBicara.className = "tombol-ptt-siaga w-full py-8 rounded-2xl bg-laut-700 text-white flex flex-col items-center justify-center cursor-pointer select-none border-2 border-laut-300";
+        ui.ikonBicara.className = "fa-solid fa-microphone text-5xl mb-3 text-white";
+        ui.labelBicara.innerText = "TEKAN UNTUK BICARA";
+        tampilanSiaga();
+      }
+      perbaruiDaftarAnggota();
+    }
+
+    function tampilanMendengar(aktif) {
+      if (aktif) {
+        ui.tombolBicara.classList.add('opacity-50', 'pointer-events-none');
+        
+        ui.teksStatus.innerText = "MENERIMA SUARA";
+        ui.teksStatus.className = "text-sm font-bold uppercase mb-1 text-hijau animasi-sinyal";
+        ui.teksAktivitas.innerText = APP.namaPembicaraAktif;
+        ui.teksAktivitas.className = "text-3xl font-black tracking-wider text-laut-900 truncate px-2";
+      } else {
+        ui.tombolBicara.classList.remove('opacity-50', 'pointer-events-none');
+        tampilanSiaga();
+      }
+      perbaruiDaftarAnggota();
+    }
+
+    function tampilanSiaga() {
+      ui.teksStatus.innerText = "STATUS RADIO";
+      ui.teksStatus.className = "text-sm font-bold uppercase mb-1 text-laut-800";
+      ui.teksAktivitas.innerText = "SIAGA";
+      ui.teksAktivitas.className = "text-3xl font-black tracking-wider text-laut-900";
+    }
+
+    function perbaruiTampilan() {
+      ui.tampilJalur.innerHTML = `<i class="fa-solid fa-tower-broadcast"></i> ${APP.jalur}`;
+      ui.teksNamaPanggilan.innerText = `NAMA KAPAL: ${APP.nama}`;
+      ui.inputNama.value = APP.nama;
+      ui.inputJalur.value = APP.jalur;
+      perbaruiDaftarAnggota();
+    }
+
+    function perbaruiDaftarAnggota() {
+      const total = APP.anggotaAktif.size + 1;
+      ui.tampilJumlahAnggota.innerText = total;
+
+      ui.daftarAnggota.innerHTML = `
+        <div class="flex justify-between items-center bg-laut-900 p-3 rounded-lg border-l-4 ${APP.sedangBicara ? 'border-oranye-500' : 'border-laut-700'} shadow mb-2">
+          <span class="font-bold text-white flex items-center gap-2">
+             <i class="fa-solid fa-user-circle text-laut-300"></i> ${APP.nama} (Anda)
+          </span>
+          <span class="text-[10px] font-bold ${APP.sedangBicara ? 'bg-oranye-500/20 text-oranye-500' : 'bg-laut-700/50 text-laut-300'} px-2 py-1 rounded">
+            ${APP.sedangBicara ? 'BICARA' : 'SIAGA'}
+          </span>
+        </div>
+      `;
+
+      APP.anggotaAktif.forEach((info, idPeer) => {
+        const diaBicara = APP.namaPembicaraAktif === info.nama;
+        const div = document.createElement('div');
+        div.className = `flex justify-between items-center bg-laut-900 p-3 rounded-lg border-l-4 ${diaBicara ? 'border-hijau' : 'border-laut-800'} shadow mb-2`;
+        div.innerHTML = `
+          <span class="font-bold text-white flex items-center gap-2 truncate pr-2">
+            <i class="fa-solid fa-ship ${diaBicara ? 'text-hijau animasi-sinyal' : 'text-laut-700'}"></i> 
+            <span class="truncate">${info.nama}</span>
+          </span>
+          <span class="text-[10px] font-bold ${diaBicara ? 'bg-hijau/20 text-hijau' : 'bg-laut-800 text-laut-300'} px-2 py-1 rounded">
+            ${diaBicara ? 'BICARA' : 'AKTIF'}
+          </span>
+        `;
+        ui.daftarAnggota.appendChild(div);
+      });
+    }
+
+    function buatVisualizer() {
+      ui.visualizerContainer.innerHTML = '';
+      for(let i=0; i<10; i++){
+        const bar = document.createElement('div');
+        bar.className = 'w-2 bg-laut-300 rounded-t-sm transition-all duration-75';
+        bar.style.height = '4px';
+        bar.id = `vbar-${i}`;
+        ui.visualizerContainer.appendChild(bar);
+      }
+    }
+
+    function renderVisualizer() {
+      requestAnimationFrame(renderVisualizer);
+      if (!APP.analyserNode) return;
+
+      const bufferLength = APP.analyserNode.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      APP.analyserNode.getByteFrequencyData(dataArray);
+
+      // Ambil 10 sampel untuk 10 bar
+      const step = Math.floor(bufferLength / 10);
+      
+      for (let i = 0; i < 10; i++) {
+        const bar = document.getElementById(`vbar-${i}`);
+        if(bar) {
+          // Normalisasi nilai 0-255 ke tinggi 4px - 32px
+          const nilai = dataArray[i * step] || 0;
+          const tinggi = Math.max(4, (nilai / 255) * 32);
+          bar.style.height = `${tinggi}px`;
+          
+          if(APP.sedangBicara) {
+            bar.className = 'w-2 bg-oranye-500 rounded-t-sm transition-all duration-75';
+          } else if (APP.sedangMendengar) {
+            bar.className = 'w-2 bg-hijau rounded-t-sm transition-all duration-75';
+          } else {
+            bar.className = 'w-2 bg-laut-300 rounded-t-sm transition-all duration-75';
+          }
         }
+      }
+    }
 
-        dropzone.addEventListener('drop', handleDrop, false);
-        dropzone.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+    function pasangEvent() {
+      // Event Tombol PTT (Dukung Sentuhan HP & Mouse)
+      const tanganiTekan = (e) => { e.preventDefault(); mulaiBicara(); };
+      const tanganiLepas = (e) => { e.preventDefault(); berhentiBicara(); };
 
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFiles(files);
+      ui.tombolBicara.addEventListener('mousedown', tanganiTekan);
+      ui.tombolBicara.addEventListener('mouseup', tanganiLepas);
+      ui.tombolBicara.addEventListener('mouseleave', tanganiLepas);
+      
+      ui.tombolBicara.addEventListener('touchstart', tanganiTekan, { passive: false });
+      ui.tombolBicara.addEventListener('touchend', tanganiLepas, { passive: false });
+      ui.tombolBicara.addEventListener('touchcancel', tanganiLepas, { passive: false });
+
+      // Modal Pengaturan
+      document.getElementById('btnPengaturan').onclick = () => {
+        buatQRCode();
+        ui.modalPengaturan.classList.remove('hidden');
+      };
+      
+      document.getElementById('btnTutupPengaturan').onclick = () => ui.modalPengaturan.classList.add('hidden');
+
+      // Simpan Pengaturan
+      document.getElementById('btnSimpanJalur').onclick = () => {
+        const namaBaru = ui.inputNama.value.trim().toUpperCase() || APP.nama;
+        const jalurBaru = ui.inputJalur.value.trim().toUpperCase().replace(/\s+/g, '-') || APP.jalur;
+
+        APP.nama = namaBaru;
+        APP.jalur = jalurBaru;
+        localStorage.setItem('ht_kp_nama', namaBaru);
+
+        // Update URL biar bisa dibagikan
+        const urlBaru = `${window.location.pathname}?jalur=${encodeURIComponent(jalurBaru)}`;
+        window.history.replaceState({ path: urlBaru }, '', urlBaru);
+
+        ui.modalPengaturan.classList.add('hidden');
+        perbaruiTampilan();
+
+        // Reset koneksi ke jalur baru
+        if (APP.peer) APP.peer.destroy();
+        sambungkanKeJaringan();
+      };
+
+      // Tombol Bagikan
+      document.getElementById('btnBagikanLink').onclick = () => {
+        const link = window.location.href;
+        const teks = `Ayo gabung di HT Jalur ${APP.jalur}! Klik link ini: ${link}`;
+        
+        if (navigator.share) {
+          navigator.share({ title: 'HT KP Nelayan', text: teks, url: link })
+            .catch(err => console.warn('Gagal membagikan', err));
+        } else {
+          // Fallback buka WA Web/App
+          window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(teks)}`);
         }
+      };
 
-        async function handleFiles(files) {
-            const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-            let addedCount = 0;
+      // Toggle Kresek
+      document.getElementById('toggleKresek').onchange = (e) => APP.efekKresekAktif = e.target.checked;
+    }
 
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                
-                if (!validTypes.includes(file.type)) {
-                    showToast(`Format ditolak: ${file.name}`, 'error');
-                    continue;
-                }
+    function buatQRCode() {
+      const qrcodeContainer = document.getElementById('qrcode');
+      qrcodeContainer.innerHTML = '';
+      new QRCode(qrcodeContainer, {
+        text: window.location.href,
+        width: 150,
+        height: 150,
+        colorDark: '#052659',
+        colorLight: '#ffffff'
+      });
+    }
 
-                const id = 'id_' + Date.now().toString() + Math.random().toString(36).substr(2, 9);
-                let thumbnailDataUrl = '';
-                
-                if (file.type.startsWith('image/')) {
-                    thumbnailDataUrl = await readFileAsDataURL(file);
-                } else if (file.type === 'application/pdf') {
-                    thumbnailDataUrl = 'placeholder_pdf'; 
-                }
+    // Memulai Aplikasi saat halaman selesai dimuat
+    window.onload = async () => {
+      perbaruiTampilan();
+      buatVisualizer();
+      pasangEvent();
+      renderVisualizer();
 
-                filesData.push({
-                    id: id,
-                    file: file,
-                    name: file.name,
-                    size: formatBytes(file.size),
-                    type: file.type,
-                    thumbnail: thumbnailDataUrl
-                });
-                addedCount++;
-            }
-
-            if (addedCount > 0) {
-                renderPreviews();
-                updateUIState();
-            }
-            
-            fileInput.value = '';
-        }
-
-        function readFileAsDataURL(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.onerror = (e) => reject(e);
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function updateUIState() {
-            if (filesData.length > 0) {
-                actionToolbar.classList.remove('hidden');
-                setTimeout(() => {
-                    actionToolbar.classList.remove('opacity-0');
-                }, 10);
-
-                floatingActionBar.classList.remove('translate-y-full');
-                fileCountDisplay.innerText = `${filesData.length} Dokumen Siap`;
-            } else {
-                actionToolbar.classList.add('opacity-0');
-                floatingActionBar.classList.add('translate-y-full');
-                setTimeout(() => {
-                    actionToolbar.classList.add('hidden');
-                }, 500);
-            }
-        }
-
-        function renderPreviews() {
-            previewContainer.innerHTML = '';
-            
-            filesData.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.className = 'relative aspect-[3/4] bg-white border border-gray-200 rounded-xl overflow-hidden group cursor-grab active:cursor-grabbing hover:-translate-y-1.5 hover:shadow-xl hover:border-black transition-all duration-300 flex flex-col items-center justify-center animate-fade-in-up';
-                div.dataset.id = item.id;
-                div.style.animationDelay = `${index * 50}ms`;
-
-                const imageContainer = document.createElement('div');
-                imageContainer.className = 'w-full h-full flex items-center justify-center bg-gray-50';
-
-                if (item.type === 'application/pdf') {
-                    imageContainer.innerHTML = `
-                        <div class="flex flex-col items-center text-gray-400 p-4">
-                            <i class="ph-fill ph-file-pdf text-5xl mb-2 text-red-500"></i>
-                            <span class="text-[10px] text-center truncate w-full px-2 font-medium text-gray-600">${item.name}</span>
-                        </div>
-                    `;
-                } else {
-                    imageContainer.innerHTML = `
-                        <img src="${item.thumbnail}" class="w-full h-full object-cover pointer-events-none select-none" alt="${item.name}">
-                    `;
-                }
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-gray-600 w-7 h-7 rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600 z-10 border border-gray-100';
-                deleteBtn.innerHTML = '<i class="ph ph-x text-sm font-bold"></i>';
-                deleteBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    removeItem(item.id);
-                };
-
-                const infoBar = document.createElement('div');
-                infoBar.className = 'absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-100 p-2 flex justify-between items-center transform translate-y-full group-hover:translate-y-0 transition-transform duration-300';
-                
-                const typeBadge = item.type === 'application/pdf' ? 
-                    '<span class="bg-red-100 text-red-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">PDF</span>' : 
-                    '<span class="bg-blue-100 text-blue-700 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase">IMG</span>';
-                
-                infoBar.innerHTML = `
-                    ${typeBadge}
-                    <span class="text-[10px] font-medium text-gray-500">${item.size}</span>
-                `;
-
-                const numBadge = document.createElement('div');
-                numBadge.className = 'absolute top-2 left-2 bg-black text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-md font-bold shadow-sm';
-                numBadge.innerText = index + 1;
-
-                div.appendChild(imageContainer);
-                div.appendChild(deleteBtn);
-                div.appendChild(infoBar);
-                div.appendChild(numBadge);
-                previewContainer.appendChild(div);
-            });
-
-            initSortable();
-        }
-
-        function removeItem(id) {
-            filesData = filesData.filter(item => item.id !== id);
-            renderPreviews();
-            updateUIState();
-        }
-
-        clearAllBtn.addEventListener('click', () => {
-            filesData = [];
-            renderPreviews();
-            updateUIState();
-        });
-
-        function initSortable() {
-            if (sortableInstance) {
-                sortableInstance.destroy();
-            }
-            sortableInstance = new Sortable(previewContainer, {
-                animation: 200,
-                ghostClass: 'sortable-ghost',
-                delay: 80,
-                delayOnTouchOnly: true,
-                touchStartThreshold: 5,
-                onEnd: function () {
-                    const newFilesData = [];
-                    const childNodes = previewContainer.childNodes;
-                    childNodes.forEach(node => {
-                        if (node.dataset && node.dataset.id) {
-                            const item = filesData.find(f => f.id === node.dataset.id);
-                            if (item) newFilesData.push(item);
-                        }
-                    });
-                    filesData = newFilesData;
-                    renderPreviews();
-                },
-            });
-        }
-
-        function normalizeImageForPDF(file) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                const objUrl = URL.createObjectURL(file);
-                
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.fillStyle = '#FFFFFF';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(img, 0, 0);
-                    
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-                    URL.revokeObjectURL(objUrl);
-                    resolve({ dataUrl, width: img.width, height: img.height });
-                };
-                img.onerror = (err) => {
-                    URL.revokeObjectURL(objUrl);
-                    reject(err);
-                };
-                img.src = objUrl;
-            });
-        }
-
-        generateBtn.addEventListener('click', async () => {
-            if (filesData.length === 0) return;
-
-            loadingOverlay.classList.remove('hidden');
-            setTimeout(() => {
-                loadingOverlay.classList.remove('opacity-0');
-                document.getElementById('loadingModal').classList.remove('scale-95');
-                document.getElementById('loadingModal').classList.add('scale-100');
-            }, 10);
-
-            const progressText = document.getElementById('progressText');
-            const progressBar = document.getElementById('progressBar');
-            progressBar.style.width = '0%';
-            progressText.innerText = 'Menganalisis file & orientasi...';
-            
-            await new Promise(r => setTimeout(r, 400));
-
-            try {
-                const { PDFDocument } = PDFLib;
-                const finalPdf = await PDFDocument.create();
-
-                const settingPaper = elPaperSize.value;
-                const settingOrientation = elOrientation.value;
-                const settingMargin = elMarginSize.value;
-
-                let PAGE_W, PAGE_H;
-                if (settingPaper === 'A4') {
-                    PAGE_W = 595.28; PAGE_H = 841.89;
-                } else {
-                    PAGE_W = 612.00; PAGE_H = 792.00;
-                }
-
-                if (settingOrientation === 'LANDSCAPE') {
-                    const temp = PAGE_W;
-                    PAGE_W = PAGE_H;
-                    PAGE_H = temp;
-                }
-
-                let MARGIN = 40;
-                if (settingMargin === 'NONE') MARGIN = 0;
-                if (settingMargin === 'LARGE') MARGIN = 80;
-
-                for (let i = 0; i < filesData.length; i++) {
-                    const item = filesData[i];
-
-                    progressText.innerText = `Memproses halaman ${i + 1} dari ${filesData.length}...`;
-                    progressBar.style.width = `${((i + 1) / filesData.length) * 100}%`;
-                    
-                    await new Promise(r => setTimeout(r, 250));
-
-                    if (item.type === 'application/pdf') {
-                        const arrayBuffer = await item.file.arrayBuffer();
-                        const loadedPdf = await PDFDocument.load(arrayBuffer);
-                        const copiedPages = await finalPdf.copyPages(loadedPdf, loadedPdf.getPageIndices());
-                        copiedPages.forEach((page) => {
-                            finalPdf.addPage(page);
-                        });
-                    } else {
-                        const normalizedData = await normalizeImageForPDF(item.file);
-                        const b64Data = normalizedData.dataUrl.split(',')[1];
-                        const imageBytes = Uint8Array.from(atob(b64Data), c => c.charCodeAt(0));
-                        
-                        const pdfImage = await finalPdf.embedJpg(imageBytes);
-                        
-                        let renderWidth = pdfImage.width;
-                        let renderHeight = pdfImage.height;
-                        
-                        const maxWidth = PAGE_W - (MARGIN * 2);
-                        const maxHeight = PAGE_H - (MARGIN * 2);
-
-                        const ratio = Math.min(maxWidth / renderWidth, maxHeight / renderHeight);
-                        renderWidth = renderWidth * ratio;
-                        renderHeight = renderHeight * ratio;
-
-                        const page = finalPdf.addPage([PAGE_W, PAGE_H]);
-                        
-                        page.drawImage(pdfImage, {
-                            x: (PAGE_W / 2) - (renderWidth / 2),
-                            y: (PAGE_H / 2) - (renderHeight / 2),
-                            width: renderWidth,
-                            height: renderHeight,
-                        });
-                    }
-                }
-
-                progressText.innerText = 'Menyelesaikan dokumen...';
-                progressBar.style.width = '100%';
-                await new Promise(r => setTimeout(r, 400));
-
-                const pdfBytes = await finalPdf.save();
-                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-                
-                if (generatedPdfBlobUrl) {
-                    URL.revokeObjectURL(generatedPdfBlobUrl);
-                }
-                generatedPdfBlobUrl = URL.createObjectURL(blob);
-                generatedPdfName = `PDF_Studio_${Date.now()}.pdf`;
-
-                loadingOverlay.classList.add('opacity-0');
-                document.getElementById('loadingModal').classList.remove('scale-100');
-                document.getElementById('loadingModal').classList.add('scale-95');
-                setTimeout(() => {
-                    loadingOverlay.classList.add('hidden');
-                    
-                    successModal.classList.remove('opacity-0', 'pointer-events-none');
-                    successModalCard.classList.remove('scale-95');
-                    successModalCard.classList.add('scale-100');
-                }, 300);
-
-            } catch (error) {
-                console.error("PDF Generation Error:", error);
-                showToast('Gagal memproses dokumen. Periksa kembali file Anda.', 'error');
-                loadingOverlay.classList.add('opacity-0');
-                document.getElementById('loadingModal').classList.remove('scale-100');
-                document.getElementById('loadingModal').classList.add('scale-95');
-                setTimeout(() => {
-                    loadingOverlay.classList.add('hidden');
-                }, 300);
-            }
-        });
-
-        downloadFinalBtn.addEventListener('click', () => {
-            if (!generatedPdfBlobUrl) return;
-
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-            if (isIOS) {
-                window.open(generatedPdfBlobUrl, '_blank');
-                showToast('PDF terbuka di tab baru. Ketuk tombol Bagikan lalu "Simpan ke File".');
-            } else {
-                const a = document.createElement('a');
-                a.href = generatedPdfBlobUrl;
-                a.download = generatedPdfName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                showToast('Sukses! PDF Anda berhasil diunduh.');
-            }
-        });
-
-        closeSuccessBtn.addEventListener('click', () => {
-            successModal.classList.add('opacity-0');
-            successModalCard.classList.remove('scale-100');
-            successModalCard.classList.add('scale-95');
-            setTimeout(() => {
-                successModal.classList.add('hidden', 'pointer-events-none');
-            }, 400);
-        });
-    </script>
+      // Coba akses mic, kalau dapat langsung konek ke jaringan peer
+      const micDiizinkan = await aktifkanMikrofon();
+      if (micDiizinkan) {
+        sambungkanKeJaringan();
+      }
+      
+      // Munculkan popup pengaturan jika ini kali pertama user masuk tanpa query jalur
+      if(!ambilJalurDariUrl() && !localStorage.getItem('ht_kp_nama')) {
+         setTimeout(() => {
+           buatQRCode();
+           ui.modalPengaturan.classList.remove('hidden');
+         }, 1000);
+      }
+    };
+  </script>
 </body>
 </html>
