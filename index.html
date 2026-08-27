@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full bg-black">
+<html lang="id" class="min-h-screen bg-black">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>TactiCall - Web Walkie Talkie</title>
   
   <!-- Tailwind CSS CDN -->
@@ -51,17 +51,8 @@
       font-family: 'Inter', sans-serif;
       background-color: #0a0c0a;
       color: #e5e5e5;
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: manipulation;
     }
 
-    input, button {
-      user-select: text !important;
-      -webkit-user-select: text !important;
-      touch-action: manipulation;
-    }
-    
     .font-mono-digital {
       font-family: 'Share Tech Mono', monospace;
     }
@@ -104,7 +95,7 @@
     }
   </style>
 </head>
-<body class="h-full flex flex-col justify-center items-center overflow-hidden relative selection:bg-emerald-500 selection:text-black">
+<body class="min-h-screen w-full flex flex-col justify-center items-center overflow-x-hidden relative selection:bg-emerald-500 selection:text-black">
 
   <!-- Toast Notification System -->
   <div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-[10000] flex flex-col gap-2 max-w-xs w-full px-4 pointer-events-none"></div>
@@ -120,6 +111,9 @@
     </p>
     <button id="btnCopyWarningLink" class="w-full max-w-sm py-4 rounded-xl bg-tactical-600 hover:bg-tactical-500 text-white font-bold transition flex items-center justify-center gap-2 active:scale-95 shadow-lg">
       <i class="fa-regular fa-copy"></i> Salin Link Website
+    </button>
+    <button id="btnCloseWarning" class="mt-6 text-gray-500 text-xs font-bold hover:text-white underline transition">
+      Abaikan, saya sudah di browser asli
     </button>
   </div>
 
@@ -140,7 +134,7 @@
         <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">ID Frekuensi (Room)</label>
         <input type="text" id="inputRoomId" placeholder="14450" value="14450" class="w-full bg-tactical-950 border border-tactical-700 rounded-xl px-4 py-3.5 text-radio-led focus:outline-none focus:border-radio-led transition text-center font-mono-digital text-2xl tracking-[0.2em]">
       </div>
-      <button id="btnJoin" class="w-full py-4 rounded-xl bg-radio-led hover:bg-emerald-400 text-tactical-950 font-black uppercase tracking-widest transition shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95 text-sm">
+      <button id="btnJoin" class="w-full py-4 rounded-xl bg-radio-led hover:bg-emerald-400 text-tactical-950 font-black uppercase tracking-widest transition shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95 text-sm flex justify-center items-center gap-2">
         Hubungkan Frekuensi
       </button>
     </div>
@@ -279,6 +273,9 @@
         } catch(e) {}
         showToast('Link disalin! Buka di Chrome/Safari.', 'success');
       });
+      document.getElementById('btnCloseWarning').addEventListener('click', () => {
+        document.getElementById('inAppBrowserWarning').classList.add('hidden');
+      });
     }
 
     // 2. Application State Variables
@@ -362,7 +359,7 @@
         localStream = dest.stream;
         return true;
       } catch (err) {
-        showToast("Akses Mikrofon ditolak! Mohon izinkan mikrofon.", 'error');
+        showToast("Mic gagal diakses: " + err.message, 'error');
         console.error(err);
         return false;
       }
@@ -398,22 +395,27 @@
     }
 
     // 4. PeerJS WebRTC & MQTT Signaling Integration
-    document.getElementById('btnJoin').addEventListener('click', async () => {
+    document.getElementById('btnJoin').addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MEMPROSES...';
+      btn.disabled = true;
+
       myNickname = inputNickname.value.trim() || 'Alpha-' + Math.floor(Math.random()*899 + 100);
       currentRoom = inputRoomId.value.trim().toUpperCase() || '14450';
       
+      const audioReady = await initAudio();
+      if (!audioReady) {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        return;
+      }
+
       setupScreen.classList.add('hidden');
       radioScreen.classList.remove('hidden');
       displayFreq.innerText = (parseFloat(currentRoom) / 100 || 144.50).toFixed(2);
       displayNickname.innerText = myNickname;
       statusText.innerText = 'INIT AUDIO...';
-
-      const audioReady = await initAudio();
-      if (!audioReady) {
-        statusText.innerText = 'MIC ERROR';
-        statusText.classList.replace('text-radio-led', 'text-red-500');
-        return;
-      }
 
       statusText.innerText = 'CONNECTING...';
       initPeerAndSignaling();
@@ -604,8 +606,8 @@
     }
 
     function startTransmit(e) {
-      if (e) {
-        if (e.cancelable) e.preventDefault();
+      if (e && e.cancelable && e.type === 'touchstart') {
+        e.preventDefault();
       }
       if (isTransmitting || !localAudioTrack) return;
       
@@ -630,8 +632,8 @@
     }
 
     function stopTransmit(e) {
-      if (e) {
-        if (e.cancelable) e.preventDefault();
+      if (e && e.cancelable && (e.type === 'touchend' || e.type === 'touchcancel')) {
+        e.preventDefault();
       }
       if (!isTransmitting || !localAudioTrack) return;
       
