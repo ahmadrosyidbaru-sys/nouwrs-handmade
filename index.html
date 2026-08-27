@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id" class="min-h-screen bg-black">
+<html lang="id" class="h-full bg-tactical-950">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>TactiCall - Web Walkie Talkie</title>
+  <title>TactiCall - Web Handy Talkie</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -22,13 +22,13 @@
         extend: {
           colors: {
             tactical: {
-              950: '#0b0d0b',
-              900: '#141815',
-              800: '#1f2622',
-              700: '#2c3731',
-              600: '#3e4e44',
-              500: '#5c7264',
-              400: '#849b8d',
+              950: '#0a0c0a',
+              900: '#121614',
+              800: '#1b221e',
+              700: '#28332d',
+              600: '#3a4a41',
+              500: '#546b5d',
+              400: '#7a9685',
             },
             radio: {
               led: '#10b981',
@@ -45,12 +45,13 @@
 
   <!-- Custom Styles -->
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;600;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;600;700;900&display=swap');
     
     body {
       font-family: 'Inter', sans-serif;
-      background-color: #0a0c0a;
+      background-color: #070907;
       color: #e5e5e5;
+      touch-action: manipulation;
     }
 
     .font-mono-digital {
@@ -59,183 +60,179 @@
 
     /* Grill Speaker Pattern */
     .grill-dot {
-      background: radial-gradient(circle, #0e1210 40%, #1f2622 90%);
+      background: radial-gradient(circle, #0c100e 40%, #1b221e 90%);
       box-shadow: inset 1px 1px 2px rgba(0,0,0,0.8);
     }
 
     /* PTT Button Styling */
     .ptt-btn {
-      background: linear-gradient(145deg, #323d37, #212924);
+      background: linear-gradient(145deg, #323d37, #1f2723);
       box-shadow: 
-        8px 8px 16px rgba(0,0,0,0.7),
-        -4px -4px 12px rgba(255,255,255,0.03),
+        6px 6px 14px rgba(0,0,0,0.8),
+        -3px -3px 8px rgba(255,255,255,0.04),
         inset 1px 1px 2px rgba(255,255,255,0.15);
-      transition: all 0.1s ease;
+      transition: all 0.08s ease;
       touch-action: none;
     }
     
     .ptt-btn:active, .ptt-btn.active-tx {
-      background: linear-gradient(145deg, #1b221e, #28332d);
+      background: linear-gradient(145deg, #18201c, #26332c);
       box-shadow: 
-        inset 4px 4px 10px rgba(0,0,0,0.8),
+        inset 4px 4px 10px rgba(0,0,0,0.9),
         inset -2px -2px 5px rgba(255,255,255,0.05);
-      transform: scale(0.97);
+      transform: scale(0.96);
     }
 
-    /* Scrollbar Styling */
+    /* Custom Scrollbar */
     .custom-scrollbar::-webkit-scrollbar {
       width: 4px;
     }
     .custom-scrollbar::-webkit-scrollbar-track {
-      background: #141815;
+      background: #121614;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #2c3731;
+      background: #28332d;
       border-radius: 2px;
     }
   </style>
 </head>
-<body class="min-h-screen w-full flex flex-col justify-center items-center overflow-x-hidden relative selection:bg-emerald-500 selection:text-black">
+<body class="h-full w-full flex flex-col justify-between items-center overflow-x-hidden selection:bg-emerald-500 selection:text-black p-2 sm:p-4">
 
-  <!-- Toast Notification System -->
-  <div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-[10000] flex flex-col gap-2 max-w-xs w-full px-4 pointer-events-none"></div>
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed top-3 left-1/2 -translate-x-1/2 z-[10000] flex flex-col gap-2 max-w-xs w-full px-4 pointer-events-none"></div>
 
   <!-- In-App Browser Warning -->
   <div id="inAppBrowserWarning" class="hidden fixed inset-0 z-[9999] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
-    <div class="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mb-6 border border-red-500/30">
-      <i class="fa-solid fa-triangle-exclamation text-4xl text-red-500"></i>
+    <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4 border border-red-500/30">
+      <i class="fa-solid fa-triangle-exclamation text-3xl text-red-500"></i>
     </div>
-    <h1 class="text-2xl font-black text-white mb-3">Gunakan Browser Asli!</h1>
-    <p class="text-gray-400 text-sm mb-8 max-w-sm leading-relaxed">
-      Browser bawaan aplikasi (Instagram/Telegram/TikTok) memblokir akses mikrofon. Buka link ini langsung di <span class="text-emerald-400 font-bold">Chrome</span> atau <span class="text-emerald-400 font-bold">Safari</span>.
+    <h1 class="text-xl font-black text-white mb-2">Buka di Browser Asli!</h1>
+    <p class="text-gray-400 text-xs mb-6 max-w-sm leading-relaxed">
+      Aplikasi internal (Instagram/Telegram/TikTok) memblokir akses mic. Buka link ini di <span class="text-emerald-400 font-bold">Chrome</span> atau <span class="text-emerald-400 font-bold">Safari</span>.
     </p>
-    <button id="btnCopyWarningLink" class="w-full max-w-sm py-4 rounded-xl bg-tactical-600 hover:bg-tactical-500 text-white font-bold transition flex items-center justify-center gap-2 active:scale-95 shadow-lg">
+    <button id="btnCopyWarningLink" class="w-full max-w-sm py-3 rounded-xl bg-tactical-600 text-white font-bold text-xs flex items-center justify-center gap-2">
       <i class="fa-regular fa-copy"></i> Salin Link Website
     </button>
-    <button id="btnCloseWarning" class="mt-6 text-gray-500 text-xs font-bold hover:text-white underline transition">
-      Abaikan, saya sudah di browser asli
-    </button>
   </div>
 
-  <!-- SETUP SCREEN -->
-  <div id="setupScreen" class="w-full max-w-sm px-6 flex flex-col items-center z-10 my-auto">
-    <div class="w-20 h-20 bg-tactical-800 rounded-2xl flex items-center justify-center mb-6 shadow-2xl border border-tactical-600/50">
-      <i class="fa-solid fa-walkie-talkie text-4xl text-radio-led"></i>
-    </div>
-    <h1 class="text-3xl font-black text-white mb-1 uppercase tracking-widest text-center">Tacti<span class="text-radio-led">Call</span></h1>
-    <p class="text-gray-400 text-xs mb-8 text-center uppercase tracking-widest font-semibold">Web Tactical Walkie Talkie</p>
-
-    <div class="w-full bg-tactical-800/90 p-6 rounded-2xl border border-tactical-600 shadow-2xl backdrop-blur-sm">
-      <div class="mb-4">
-        <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Nama Sandi / Panggilan</label>
-        <input type="text" id="inputNickname" placeholder="Contoh: Alpha-1" class="w-full bg-tactical-950 border border-tactical-700 rounded-xl px-4 py-3.5 text-white focus:outline-none focus:border-radio-led transition text-center font-bold text-base placeholder:text-gray-600">
-      </div>
-      <div class="mb-6">
-        <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">ID Frekuensi (Room)</label>
-        <input type="text" id="inputRoomId" placeholder="14450" value="14450" class="w-full bg-tactical-950 border border-tactical-700 rounded-xl px-4 py-3.5 text-radio-led focus:outline-none focus:border-radio-led transition text-center font-mono-digital text-2xl tracking-[0.2em]">
-      </div>
-      <button id="btnJoin" class="w-full py-4 rounded-xl bg-radio-led hover:bg-emerald-400 text-tactical-950 font-black uppercase tracking-widest transition shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95 text-sm flex justify-center items-center gap-2">
-        Hubungkan Frekuensi
-      </button>
-    </div>
-  </div>
-
-  <!-- HT RADIO SCREEN -->
-  <div id="radioScreen" class="hidden w-full max-w-md h-full sm:h-auto sm:max-h-[95vh] flex flex-col items-center p-3 sm:p-5 z-10 relative my-auto">
+  <!-- SINGLE PAGE HANDY TALKIE CONTAINER -->
+  <div class="w-full max-w-sm my-auto flex flex-col items-center relative">
     
-    <!-- Outer Radio Body -->
-    <div class="w-full bg-tactical-900 border-2 border-tactical-700 rounded-3xl p-5 shadow-2xl flex flex-col items-center relative overflow-hidden">
+    <!-- Outer Radio Device Body -->
+    <div class="w-full bg-tactical-900 border-2 border-tactical-700 rounded-3xl p-4 shadow-2xl flex flex-col items-center relative overflow-hidden">
       
-      <!-- Top Antenna & Knob Decorative -->
-      <div class="absolute -top-3 left-8 w-4 h-6 bg-tactical-700 rounded-t-sm border border-black"></div>
-      <div class="absolute -top-4 right-10 w-8 h-8 bg-tactical-800 rounded-t-md border border-black flex items-center justify-center">
-        <div class="w-6 h-1 bg-tactical-600 rounded"></div>
+      <!-- Top Decorative Antenna & Switch Knob -->
+      <div class="absolute -top-3 left-7 w-4 h-6 bg-tactical-700 rounded-t border border-black"></div>
+      <div class="absolute -top-4 right-8 w-8 h-7 bg-tactical-800 rounded-t-md border border-black flex items-center justify-center">
+        <div class="w-5 h-1 bg-tactical-600 rounded"></div>
       </div>
 
-      <!-- Top Status Bar -->
-      <div class="w-full flex items-center justify-between mb-4 px-2 pt-2">
+      <!-- Header Brand & Status Bar -->
+      <div class="w-full flex items-center justify-between mb-3 px-1 pt-1">
         <div class="flex items-center gap-2">
           <div id="ledIndicator" class="w-3.5 h-3.5 rounded-full bg-radio-ledOff border border-black transition-all"></div>
-          <span id="statusText" class="text-[10px] font-bold tracking-widest text-radio-led font-mono-digital uppercase">OFFLINE</span>
+          <span id="statusText" class="text-[11px] font-bold tracking-widest text-emerald-500 font-mono-digital uppercase">STANDBY</span>
         </div>
-        <div class="flex items-center gap-1.5 text-gray-400 text-xs">
-          <i class="fa-solid fa-users text-[10px]"></i>
-          <span id="userCount" class="font-mono-digital text-white font-bold text-xs">0 P</span>
-        </div>
-      </div>
-
-      <!-- Digital LCD Display -->
-      <div class="w-full bg-radio-screen border-2 border-tactical-700 rounded-xl p-4 mb-4 shadow-inner relative overflow-hidden">
-        <div class="absolute inset-0 bg-emerald-500/5 pointer-events-none"></div>
-        <div class="flex justify-between items-start mb-2">
-          <span class="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">CH FREQ</span>
-          <span class="text-[10px] text-emerald-500/70 font-mono-digital uppercase tracking-wider">FM TRANSMITTER</span>
-        </div>
-        <div class="flex items-baseline justify-between">
-          <div class="flex items-baseline gap-1">
-            <span id="displayFreq" class="text-3xl sm:text-4xl font-mono-digital font-bold text-radio-led tracking-[0.15em] drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">144.50</span>
-            <span class="text-xs text-emerald-600 font-mono-digital font-bold">MHz</span>
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] font-black text-gray-400 tracking-widest uppercase">TACTICALL HT</span>
+          <div class="flex items-center gap-1 text-gray-400 text-xs bg-tactical-950 px-2 py-0.5 rounded border border-tactical-800">
+            <i class="fa-solid fa-users text-[9px]"></i>
+            <span id="userCount" class="font-mono-digital text-white font-bold text-xs">0</span>
           </div>
-          <span id="displayNickname" class="text-xs font-bold text-emerald-300 truncate max-w-[120px] bg-emerald-950/60 px-2.5 py-1 rounded border border-emerald-800/50">CALLSIGN</span>
         </div>
       </div>
 
-      <!-- Users in Room List -->
-      <div class="w-full bg-tactical-950 rounded-xl p-3 border border-tactical-800 mb-4 flex-1 min-h-[120px] max-h-[160px] overflow-y-auto custom-scrollbar">
-        <h3 class="text-[10px] font-bold text-tactical-400 uppercase tracking-widest mb-2 border-b border-tactical-800 pb-1 flex justify-between">
-          <span>Anggota Jaringan</span>
-          <i class="fa-solid fa-[#10b981] fa-signal"></i>
-        </h3>
-        <ul id="userList" class="space-y-1.5">
-          <!-- Users injected dynamically -->
-        </ul>
-      </div>
-
-      <!-- Speaker Grill Design -->
-      <div class="w-full flex justify-center mb-6 opacity-75">
-        <div class="grid grid-cols-8 gap-1.5 p-2 bg-tactical-950/40 rounded-xl border border-tactical-800/50">
-          <div class="w-2.5 h-2.5 rounded-full grill-dot"></div><div class="w-2.5 h-2.5 rounded-full grill-dot"></div>
-          <div class="w-2.5 h-2.5 rounded-full grill-dot"></div><div class="w-2.5 h-2.5 rounded-full grill-dot"></div>
-          <div class="w-2.5 h-2.5 rounded-full grill-dot"></div><div class="w-2.5 h-2.5 rounded-full grill-dot"></div>
-          <div class="w-2.5 h-2.5 rounded-full grill-dot"></div><div class="w-2.5 h-2.5 rounded-full grill-dot"></div>
-          <div class="w-2.5 h-2.5 rounded-full grill-dot"></div><div class="w-2.5 h-2.5 rounded-full grill-dot"></div>
-          <div class="w-2.5 h-2.5 rounded-full grill-dot"></div><div class="w-2.5 h-2.5 rounded-full grill-dot"></div>
-          <div class="w-2.5 h-2.5 rounded-full grill-dot"></div><div class="w-2.5 h-2.5 rounded-full grill-dot"></div>
-          <div class="w-2.5 h-2.5 rounded-full grill-dot"></div><div class="w-2.5 h-2.5 rounded-full grill-dot"></div>
+      <!-- Control Panel / Inputs integrated into HT Header -->
+      <div class="w-full bg-tactical-950 p-2.5 rounded-xl border border-tactical-800 mb-3 space-y-2">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[9px] font-bold text-tactical-400 uppercase tracking-wider mb-1">Nama Callsign</label>
+            <input type="text" id="inputNickname" placeholder="Alpha-1" class="w-full bg-tactical-900 border border-tactical-700 rounded-lg px-2.5 py-2 text-white text-xs font-bold focus:outline-none focus:border-radio-led text-center">
+          </div>
+          <div>
+            <label class="block text-[9px] font-bold text-tactical-400 uppercase tracking-wider mb-1">ID Frekuensi</label>
+            <input type="text" id="inputRoomId" placeholder="14450" value="14450" class="w-full bg-tactical-900 border border-tactical-700 rounded-lg px-2.5 py-2 text-radio-led text-sm font-mono-digital font-bold focus:outline-none focus:border-radio-led text-center tracking-widest">
+          </div>
         </div>
-      </div>
 
-      <!-- PTT Main Button Area -->
-      <div class="w-full flex justify-center items-center pb-2">
-        <button id="btnPTT" class="ptt-btn relative w-36 h-36 rounded-full border-4 border-tactical-950 flex flex-col items-center justify-center group outline-none select-none cursor-pointer">
-          <div class="absolute inset-2 rounded-full border border-tactical-500/20 pointer-events-none"></div>
-          <i class="fa-solid fa-microphone text-2xl text-tactical-500 group-hover:text-tactical-400 group-active:text-radio-led transition-colors pointer-events-none mb-1"></i>
-          <span class="font-black text-tactical-400 tracking-widest text-lg group-hover:text-gray-200 group-active:text-radio-led transition-colors pointer-events-none">PTT</span>
-          <span class="text-[9px] text-tactical-500 font-bold uppercase tracking-wider pointer-events-none">Tahan Bicara</span>
+        <button id="btnConnectToggle" class="w-full py-2.5 rounded-lg bg-radio-led hover:bg-emerald-400 text-tactical-950 font-black uppercase tracking-wider text-xs transition shadow-md flex justify-center items-center gap-2 active:scale-95 cursor-pointer">
+          <i class="fa-solid fa-power-off"></i>
+          <span id="btnConnectText">HUBUNGKAN FREKUENSI</span>
         </button>
       </div>
 
-      <!-- Action Buttons Footer -->
-      <div class="w-full flex justify-between items-center mt-4 pt-3 border-t border-tactical-800/80 px-2">
-        <button id="btnCopyRoom" class="h-10 px-4 rounded-xl bg-tactical-800 hover:bg-tactical-700 border border-tactical-700 flex items-center gap-2 text-xs font-bold text-tactical-400 active:scale-95 transition" title="Bagikan Frekuensi">
+      <!-- LCD Screen Display -->
+      <div class="w-full bg-radio-screen border-2 border-tactical-700 rounded-xl p-3 mb-3 shadow-inner relative overflow-hidden">
+        <div class="absolute inset-0 bg-emerald-500/5 pointer-events-none"></div>
+        <div class="flex justify-between items-start mb-1">
+          <span class="text-[9px] text-emerald-600 font-bold uppercase tracking-widest">CH FREQ</span>
+          <span id="dispCallsign" class="text-[10px] text-emerald-300 font-bold uppercase truncate max-w-[100px]">ALPHA-1</span>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <div class="flex items-baseline gap-1">
+            <span id="displayFreq" class="text-3xl font-mono-digital font-bold text-radio-led tracking-[0.15em] drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]">144.50</span>
+            <span class="text-xs text-emerald-600 font-mono-digital font-bold">MHz</span>
+          </div>
+          <span id="dispState" class="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/60 uppercase">OFF</span>
+        </div>
+      </div>
+
+      <!-- Active Members List -->
+      <div class="w-full bg-tactical-950 rounded-xl p-2.5 border border-tactical-800 mb-3 flex-1 min-h-[95px] max-h-[120px] overflow-y-auto custom-scrollbar">
+        <div class="text-[9px] font-bold text-tactical-400 uppercase tracking-widest mb-1.5 border-b border-tactical-800 pb-1 flex justify-between items-center">
+          <span>Anggota di Frekuensi Ini</span>
+          <i class="fa-solid fa-signal text-emerald-500 text-[10px]"></i>
+        </div>
+        <ul id="userList" class="space-y-1">
+          <li class="text-[11px] text-gray-500 italic text-center py-2">Belum terhubung ke frekuensi</li>
+        </ul>
+      </div>
+
+      <!-- Speaker Grill Decorative -->
+      <div class="w-full flex justify-center mb-3 opacity-70">
+        <div class="grid grid-cols-8 gap-1 p-1.5 bg-tactical-950/50 rounded-lg border border-tactical-800">
+          <div class="w-2 h-2 rounded-full grill-dot"></div><div class="w-2 h-2 rounded-full grill-dot"></div>
+          <div class="w-2 h-2 rounded-full grill-dot"></div><div class="w-2 h-2 rounded-full grill-dot"></div>
+          <div class="w-2 h-2 rounded-full grill-dot"></div><div class="w-2 h-2 rounded-full grill-dot"></div>
+          <div class="w-2 h-2 rounded-full grill-dot"></div><div class="w-2 h-2 rounded-full grill-dot"></div>
+          <div class="w-2 h-2 rounded-full grill-dot"></div><div class="w-2 h-2 rounded-full grill-dot"></div>
+          <div class="w-2 h-2 rounded-full grill-dot"></div><div class="w-2 h-2 rounded-full grill-dot"></div>
+          <div class="w-2 h-2 rounded-full grill-dot"></div><div class="w-2 h-2 rounded-full grill-dot"></div>
+          <div class="w-2 h-2 rounded-full grill-dot"></div><div class="w-2 h-2 rounded-full grill-dot"></div>
+        </div>
+      </div>
+
+      <!-- PTT Main Push-To-Talk Button -->
+      <div class="w-full flex flex-col justify-center items-center pb-1">
+        <button id="btnPTT" class="ptt-btn relative w-32 h-32 rounded-full border-4 border-tactical-950 flex flex-col items-center justify-center group outline-none select-none cursor-pointer">
+          <div class="absolute inset-1.5 rounded-full border border-tactical-500/20 pointer-events-none"></div>
+          <i class="fa-solid fa-microphone text-xl text-tactical-500 group-hover:text-tactical-400 transition-colors pointer-events-none mb-0.5"></i>
+          <span class="font-black text-tactical-400 tracking-widest text-base group-hover:text-gray-200 transition-colors pointer-events-none">PTT</span>
+          <span id="pttSubtext" class="text-[8px] text-tactical-500 font-bold uppercase tracking-wider pointer-events-none mt-0.5">Tahan Bicara</span>
+        </button>
+      </div>
+
+      <!-- Bottom Utility Buttons -->
+      <div class="w-full flex justify-between items-center mt-3 pt-2.5 border-t border-tactical-800 px-1">
+        <button id="btnShareFreq" class="h-9 px-3 rounded-lg bg-tactical-800 hover:bg-tactical-700 border border-tactical-700 flex items-center gap-1.5 text-[11px] font-bold text-tactical-400 active:scale-95 transition" title="Bagikan Frekuensi">
           <i class="fa-solid fa-share-nodes"></i>
           <span>Bagikan</span>
         </button>
 
-        <button id="btnLeave" class="h-10 px-4 rounded-xl bg-tactical-800 hover:bg-red-950/60 border border-tactical-700 hover:border-red-800 flex items-center gap-2 text-xs font-bold text-tactical-400 hover:text-red-400 active:scale-95 transition" title="Matikan Radio">
-          <i class="fa-solid fa-power-off"></i>
-          <span>Matikan</span>
+        <button id="btnQuickReset" class="h-9 px-3 rounded-lg bg-tactical-800 hover:bg-tactical-700 border border-tactical-700 flex items-center gap-1.5 text-[11px] font-bold text-tactical-400 active:scale-95 transition">
+          <i class="fa-solid fa-rotate-right"></i>
+          <span>Reset</span>
         </button>
       </div>
 
     </div>
   </div>
 
-  <!-- Audio Container -->
+  <!-- Hidden Container for Peer Audio -->
   <div id="audioContainer" class="hidden"></div>
 
   <script>
-    // Custom Notification Toast Function
+    // Toast Notification System
     function showToast(message, type = 'info') {
       const toast = document.createElement('div');
       toast.className = `p-3 rounded-xl shadow-xl text-xs font-bold text-white transition-all duration-300 transform translate-y-0 opacity-100 flex items-center gap-2 border ${
@@ -254,8 +251,8 @@
       }
     }
 
-    // 1. In-App Browser Detection
-    function detectInAppBrowser() {
+    // In-App Browser Warning Check
+    function checkInAppBrowser() {
       const ua = navigator.userAgent || navigator.vendor || window.opera;
       const isInstagram = (ua.indexOf("Instagram") > -1);
       const isTelegram = (ua.indexOf("Telegram") > -1); 
@@ -265,26 +262,29 @@
       return (isInstagram || isTelegram || isFacebook || isLine || isTikTok);
     }
 
-    if (detectInAppBrowser()) {
+    if (checkInAppBrowser()) {
       document.getElementById('inAppBrowserWarning').classList.remove('hidden');
       document.getElementById('btnCopyWarningLink').addEventListener('click', () => {
         try {
+          const dummy = document.createElement('input');
+          document.body.appendChild(dummy);
+          dummy.value = window.location.href;
+          dummy.select();
           document.execCommand('copy');
+          document.body.removeChild(dummy);
         } catch(e) {}
         showToast('Link disalin! Buka di Chrome/Safari.', 'success');
       });
-      document.getElementById('btnCloseWarning').addEventListener('click', () => {
-        document.getElementById('inAppBrowserWarning').classList.add('hidden');
-      });
     }
 
-    // 2. Application State Variables
+    // Application State Variables
     let peer = null;
     let mqttClient = null;
     let myPeerId = null;
     let myNickname = 'Alpha-1';
-    let currentRoom = null;
-    
+    let currentRoom = '14450';
+    let isConnected = false;
+
     let localStream = null;
     let localAudioTrack = null;
     let isTransmitting = false;
@@ -295,26 +295,31 @@
     let audioCtx = null;
 
     // DOM References
-    const setupScreen = document.getElementById('setupScreen');
-    const radioScreen = document.getElementById('radioScreen');
     const inputNickname = document.getElementById('inputNickname');
     const inputRoomId = document.getElementById('inputRoomId');
+    const btnConnectToggle = document.getElementById('btnConnectToggle');
+    const btnConnectText = document.getElementById('btnConnectText');
     const displayFreq = document.getElementById('displayFreq');
-    const displayNickname = document.getElementById('displayNickname');
+    const dispCallsign = document.getElementById('dispCallsign');
+    const dispState = document.getElementById('dispState');
     const statusText = document.getElementById('statusText');
     const userCount = document.getElementById('userCount');
     const userList = document.getElementById('userList');
     const ledIndicator = document.getElementById('ledIndicator');
     const btnPTT = document.getElementById('btnPTT');
+    const pttSubtext = document.getElementById('pttSubtext');
     const audioContainer = document.getElementById('audioContainer');
 
-    // Auto load frequency from URL param if available
+    // Auto load frequency from URL parameter if available
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('freq')) {
       inputRoomId.value = urlParams.get('freq');
     }
 
-    // 3. Realistic Tactical Audio Synthesizer & Filter System
+    // Default Random Nickname Generator
+    inputNickname.value = 'Alpha-' + Math.floor(Math.random() * 899 + 100);
+
+    // Audio Initialization & Radio Sound Synthesizer
     async function initAudio() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -334,13 +339,13 @@
         });
         
         localAudioTrack = stream.getAudioTracks()[0];
-        localAudioTrack.enabled = false; // Mute initially
+        localAudioTrack.enabled = false; // Mute mic initially
 
         // Create Bandpass filter to simulate Walkie-Talkie frequency response
         const source = audioCtx.createMediaStreamSource(stream);
         const filter = audioCtx.createBiquadFilter();
         filter.type = 'bandpass';
-        filter.frequency.value = 1600; // Center frequency for radio sound
+        filter.frequency.value = 1600;
         filter.Q.value = 2.0;
         
         const compressor = audioCtx.createDynamicsCompressor();
@@ -359,68 +364,102 @@
         localStream = dest.stream;
         return true;
       } catch (err) {
-        showToast("Mic gagal diakses: " + err.message, 'error');
+        showToast("Akses Mic gagal: " + err.message, 'error');
         console.error(err);
         return false;
       }
     }
 
-    // Sound effect generator (PTT Start & Roger Beep)
+    // Sound effect generator for PTT Beeps
     function playHTBeep(type) {
       if (!audioCtx) return;
-      
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      
-      const now = audioCtx.currentTime;
-      if (type === 'start') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, now);
-        gain.gain.setValueAtTime(0, now);
-        gain.gain.linearRampToValueAtTime(0.12, now + 0.01);
-        osc.start(now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-        osc.stop(now + 0.08);
-      } else if (type === 'end') {
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(1200, now);
-        gain.gain.setValueAtTime(0.08, now);
-        osc.frequency.setValueAtTime(1800, now + 0.06);
-        osc.start(now);
-        osc.stop(now + 0.12);
-      }
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        const now = audioCtx.currentTime;
+        if (type === 'start') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(880, now);
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(0.12, now + 0.01);
+          osc.start(now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.stop(now + 0.08);
+        } else if (type === 'end') {
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(1200, now);
+          gain.gain.setValueAtTime(0.08, now);
+          osc.frequency.setValueAtTime(1800, now + 0.06);
+          osc.start(now);
+          osc.stop(now + 0.12);
+        }
+      } catch (e) {}
     }
 
-    // 4. PeerJS WebRTC & MQTT Signaling Integration
-    document.getElementById('btnJoin').addEventListener('click', async (e) => {
-      const btn = e.currentTarget;
-      const originalText = btn.innerHTML;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> MEMPROSES...';
-      btn.disabled = true;
+    // Connect / Disconnect Toggle Button Logic
+    btnConnectToggle.addEventListener('click', async () => {
+      if (isConnected) {
+        disconnectRadio();
+      } else {
+        await connectRadio();
+      }
+    });
 
-      myNickname = inputNickname.value.trim() || 'Alpha-' + Math.floor(Math.random()*899 + 100);
+    async function connectRadio() {
+      myNickname = inputNickname.value.trim() || ('Alpha-' + Math.floor(Math.random()*899 + 100));
       currentRoom = inputRoomId.value.trim().toUpperCase() || '14450';
+
+      dispCallsign.innerText = myNickname.toUpperCase();
+      displayFreq.innerText = (parseFloat(currentRoom) / 100 || 144.50).toFixed(2);
       
+      btnConnectText.innerText = 'MEMPROSES...';
+      btnConnectToggle.disabled = true;
+
       const audioReady = await initAudio();
       if (!audioReady) {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+        btnConnectText.innerText = 'HUBUNGKAN FREKUENSI';
+        btnConnectToggle.disabled = false;
         return;
       }
 
-      setupScreen.classList.add('hidden');
-      radioScreen.classList.remove('hidden');
-      displayFreq.innerText = (parseFloat(currentRoom) / 100 || 144.50).toFixed(2);
-      displayNickname.innerText = myNickname;
-      statusText.innerText = 'INIT AUDIO...';
-
-      statusText.innerText = 'CONNECTING...';
+      statusText.innerText = 'CONNECTING';
       initPeerAndSignaling();
-    });
+    }
 
+    function disconnectRadio() {
+      if (mqttClient) {
+        try {
+          mqttClient.publish(`htweb/room/${currentRoom}`, JSON.stringify({
+            type: 'leave',
+            peerId: myPeerId
+          }));
+          mqttClient.end();
+        } catch(e) {}
+      }
+      if (peer) peer.destroy();
+
+      isConnected = false;
+      myPeerId = null;
+      btnConnectText.innerText = 'HUBUNGKAN FREKUENSI';
+      btnConnectToggle.classList.replace('bg-red-600', 'bg-radio-led');
+      btnConnectToggle.classList.replace('hover:bg-red-500', 'hover:bg-emerald-400');
+      btnConnectToggle.disabled = false;
+
+      statusText.innerText = 'STANDBY';
+      dispState.innerText = 'OFF';
+      dispState.className = 'text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/60 uppercase';
+      
+      setLed('OFF');
+      userList.innerHTML = '<li class="text-[11px] text-gray-500 italic text-center py-2">Belum terhubung ke frekuensi</li>';
+      userCount.innerText = '0';
+      
+      showToast('Radio dimatikan.', 'info');
+    }
+
+    // PeerJS & MQTT Network Mesh Setup
     function initPeerAndSignaling() {
       const randomId = 'ht_' + Math.random().toString(36).substring(2, 9);
       peer = new Peer(randomId, {
@@ -434,8 +473,17 @@
 
       peer.on('open', (id) => {
         myPeerId = id;
+        isConnected = true;
+        
+        btnConnectText.innerText = 'PUTUSKAN FREKUENSI';
+        btnConnectToggle.classList.replace('bg-radio-led', 'bg-red-600');
+        btnConnectToggle.classList.replace('hover:bg-emerald-400', 'hover:bg-red-500');
+        btnConnectToggle.disabled = false;
+
         statusText.innerText = 'ONLINE';
-        statusText.classList.replace('text-radio-led', 'text-emerald-400');
+        dispState.innerText = 'READY';
+        dispState.className = 'text-[10px] font-bold text-radio-led bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500 uppercase';
+        
         showToast('Terhubung ke frekuensi!', 'success');
         
         roomMembers[myPeerId] = { nickname: myNickname, isTalking: false };
@@ -452,7 +500,8 @@
       peer.on('error', (err) => {
         console.error('PeerJS Error:', err);
         statusText.innerText = 'CONN ERR';
-        showToast('Gagal terhubung ke jaringan peer.', 'error');
+        showToast('Gagal terhubung ke peer.', 'error');
+        disconnectRadio();
       });
     }
 
@@ -559,7 +608,7 @@
 
     function removePeer(id) {
       if (connectedPeers[id]) {
-        connectedPeers[id].call.close();
+        try { connectedPeers[id].call.close(); } catch(e) {}
         delete connectedPeers[id];
       }
       const audioEl = document.getElementById(`audio_${id}`);
@@ -569,7 +618,6 @@
       updateUserListUI();
     }
 
-    // 5. User Interface & PTT Controllers
     function updateUserListUI() {
       userList.innerHTML = '';
       let count = 0;
@@ -578,7 +626,7 @@
         count++;
         const isMe = (id === myPeerId);
         const li = document.createElement('li');
-        li.className = `flex items-center justify-between p-2 rounded-lg bg-tactical-900 border ${data.isTalking ? 'border-radio-led bg-emerald-950/40' : 'border-tactical-800'} transition-colors`;
+        li.className = `flex items-center justify-between p-1.5 rounded-lg bg-tactical-900 border ${data.isTalking ? 'border-radio-led bg-emerald-950/40' : 'border-tactical-800'} transition-colors`;
         
         li.innerHTML = `
           <div class="flex items-center gap-2">
@@ -589,7 +637,7 @@
         `;
         userList.appendChild(li);
       }
-      userCount.innerText = `${count} P`;
+      userCount.innerText = count.toString();
     }
 
     function setLed(state) {
@@ -606,13 +654,16 @@
     }
 
     function startTransmit(e) {
-      if (e && e.cancelable && e.type === 'touchstart') {
-        e.preventDefault();
+      if (!isConnected) {
+        showToast('Klik "HUBUNGKAN FREKUENSI" terlebih dahulu!', 'error');
+        return;
       }
       if (isTransmitting || !localAudioTrack) return;
       
       isTransmitting = true;
       btnPTT.classList.add('active-tx');
+      pttSubtext.innerText = 'TRANSMITTING';
+      pttSubtext.classList.replace('text-tactical-500', 'text-radio-led');
       
       localAudioTrack.enabled = true;
       playHTBeep('start');
@@ -632,13 +683,12 @@
     }
 
     function stopTransmit(e) {
-      if (e && e.cancelable && (e.type === 'touchend' || e.type === 'touchcancel')) {
-        e.preventDefault();
-      }
       if (!isTransmitting || !localAudioTrack) return;
       
       isTransmitting = false;
       btnPTT.classList.remove('active-tx');
+      pttSubtext.innerText = 'Tahan Bicara';
+      pttSubtext.classList.replace('text-radio-led', 'text-tactical-500');
       
       localAudioTrack.enabled = false;
       playHTBeep('end');
@@ -657,44 +707,33 @@
       updateUserListUI();
     }
 
-    // Touch & Mouse Listener bindings for maximum cross-platform support
-    btnPTT.addEventListener('touchstart', startTransmit, { passive: false });
-    btnPTT.addEventListener('touchend', stopTransmit, { passive: false });
-    btnPTT.addEventListener('touchcancel', stopTransmit, { passive: false });
-
-    btnPTT.addEventListener('mousedown', startTransmit);
-    btnPTT.addEventListener('mouseup', stopTransmit);
-    btnPTT.addEventListener('mouseleave', stopTransmit);
-
-    window.addEventListener('mouseup', stopTransmit);
-    window.addEventListener('touchend', stopTransmit);
+    // Universal Pointer Events for PTT Button (Handles Mobile Touch & Mouse Seamlessly)
+    btnPTT.addEventListener('pointerdown', startTransmit);
+    window.addEventListener('pointerup', stopTransmit);
+    window.addEventListener('pointercancel', stopTransmit);
 
     btnPTT.addEventListener('contextmenu', e => e.preventDefault());
 
-    // Share & Leave Buttons Logic
-    document.getElementById('btnCopyRoom').addEventListener('click', () => {
-      const url = window.location.origin + window.location.pathname + '?freq=' + currentRoom;
+    // Share & Quick Reset Buttons
+    document.getElementById('btnShareFreq').addEventListener('click', () => {
+      const room = inputRoomId.value.trim() || '14450';
+      const url = window.location.origin + window.location.pathname + '?freq=' + room;
       const dummy = document.createElement('input');
       document.body.appendChild(dummy);
       dummy.value = url;
       dummy.select();
       try {
         document.execCommand('copy');
+        showToast('Link Frekuensi disalin!', 'success');
       } catch(e) {}
       document.body.removeChild(dummy);
-      showToast('Link Frekuensi disalin ke clipboard!', 'success');
     });
 
-    document.getElementById('btnLeave').addEventListener('click', () => {
-      if(mqttClient) {
-        mqttClient.publish(`htweb/room/${currentRoom}`, JSON.stringify({
-          type: 'leave',
-          peerId: myPeerId
-        }));
-        mqttClient.end();
-      }
-      if(peer) peer.destroy();
-      window.location.reload();
+    document.getElementById('btnQuickReset').addEventListener('click', () => {
+      disconnectRadio();
+      inputNickname.value = 'Alpha-' + Math.floor(Math.random() * 899 + 100);
+      inputRoomId.value = '14450';
+      showToast('Formulir direset.', 'info');
     });
 
     window.addEventListener('beforeunload', () => {
