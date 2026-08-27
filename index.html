@@ -1,744 +1,734 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full bg-laut-900 text-laut-100">
+<html lang="id" class="dark h-full">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#021024">
-  <title>HT KP Nelayan</title>
-  
-  <!-- Tailwind CSS CDN -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>HT Web - Tactical Radio</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- PeerJS for WebRTC P2P Connections -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- MQTT.js for Room Signaling & Discovery -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           colors: {
-            laut: {
-              950: '#010812',
-              900: '#021024',
-              800: '#052659',
-              700: '#5483B3',
-              300: '#7DA0CA',
-              100: '#C1E8FF'
+            tactical: {
+              900: '#111312',
+              800: '#1a1d1a',
+              700: '#2c322d',
+              600: '#3f4740',
+              500: '#5c6b5d',
             },
-            oranye: {
-              500: '#FF7A00',
-              600: '#E66D00'
-            },
-            hijau: '#11B846',
-            merah: '#E33535'
+            radio: {
+              led: '#10b981', // Emerald 500
+              ledOff: '#064e3b', // Emerald 900
+              ledTx: '#ef4444', // Red 500
+            }
           },
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            mono: ['Courier New', 'monospace']
+          animation: {
+            'led-blink': 'blink 1s infinite',
+          },
+          keyframes: {
+            blink: {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0.4' },
+            }
           }
         }
       }
     }
   </script>
   
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- PeerJS for WebRTC Mesh Audio -->
-  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
-  <!-- QRCode.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
   <style>
-    /* Mencegah zoom dan efek scroll karet di HP */
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;600;800&display=swap');
+    
     body {
-      touch-action: manipulation;
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
+      font-family: 'Inter', sans-serif;
+      background-color: #0a0a0a;
+      color: #e5e5e5;
+      /* Mencegah seleksi teks dan zoom saat menekan tombol PTT */
       user-select: none;
-      overscroll-behavior-y: none;
+      -webkit-user-select: none;
+      touch-action: pan-y;
     }
     
-    /* Efek Layar HT */
-    .layar-ht {
-      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
-      background: linear-gradient(180deg, #C1E8FF 0%, #7DA0CA 100%);
-      color: #021024;
+    .font-mono-digital {
+      font-family: 'Share Tech Mono', monospace;
     }
 
-    /* Animasi Tombol Bicara */
-    .tombol-ptt {
-      transition: all 0.15s ease-out;
-      box-shadow: 0 12px 0 #E66D00, 0 15px 20px rgba(0,0,0,0.5);
+    /* Styling fisik HT */
+    .ht-body {
+      background: linear-gradient(145deg, #1f2320, #141715);
+      box-shadow: 
+        inset 2px 2px 5px rgba(255,255,255,0.05),
+        inset -5px -5px 15px rgba(0,0,0,0.8),
+        10px 10px 30px rgba(0,0,0,0.9);
+      border: 2px solid #2c322d;
+    }
+
+    .ht-screen {
+      background: #022c22;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+      text-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+    }
+
+    .scan-line {
+      background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.1) 50%, rgba(255,255,255,0));
+      background-size: 100% 4px;
+    }
+
+    /* Push To Talk Button Styling */
+    .ptt-btn {
+      background: linear-gradient(145deg, #3f4740, #2c322d);
+      box-shadow: 
+        10px 10px 20px rgba(0,0,0,0.6),
+        -5px -5px 15px rgba(255,255,255,0.05),
+        inset 1px 1px 2px rgba(255,255,255,0.2);
+      transition: all 0.1s ease;
+    }
+    .ptt-btn:active, .ptt-btn.active-tx {
+      background: linear-gradient(145deg, #2c322d, #1a1d1a);
+      box-shadow: 
+        inset 10px 10px 20px rgba(0,0,0,0.8),
+        inset -2px -2px 5px rgba(255,255,255,0.05);
+      transform: scale(0.96);
     }
     
-    .tombol-ptt:active, .tombol-ptt.aktif {
-      transform: translateY(12px);
-      box-shadow: 0 0 0 #E66D00, 0 3px 5px rgba(0,0,0,0.5);
-      background-color: #FF9500; /* Sedikit lebih terang saat ditekan */
+    .ptt-btn::after {
+      content: '';
+      position: absolute;
+      top: 15%; left: 15%; right: 15%; bottom: 15%;
+      border-radius: 50%;
+      background: radial-gradient(circle, transparent 30%, rgba(0,0,0,0.4) 100%);
+      pointer-events: none;
     }
 
-    .tombol-ptt-siaga {
-      transition: all 0.15s ease-out;
-      box-shadow: 0 12px 0 #052659, 0 15px 20px rgba(0,0,0,0.5);
-    }
-    
-    .tombol-ptt-siaga:active, .tombol-ptt-siaga.aktif {
-      transform: translateY(12px);
-      box-shadow: 0 0 0 #052659, 0 3px 5px rgba(0,0,0,0.5);
-    }
-
-    /* Gelombang Sinyal */
-    @keyframes sinyal-kedip {
-      0% { opacity: 1; }
-      50% { opacity: 0.3; }
-      100% { opacity: 1; }
-    }
-    .animasi-sinyal {
-      animation: sinyal-kedip 1s infinite ease-in-out;
+    /* Speaker Grill */
+    .grill-dot {
+      background-color: #0a0a0a;
+      box-shadow: inset 1px 1px 2px rgba(0,0,0,0.8), 1px 1px 1px rgba(255,255,255,0.1);
     }
   </style>
 </head>
+<body class="h-full flex flex-col justify-center items-center overflow-hidden relative">
 
-<body class="h-full flex flex-col justify-between max-w-md mx-auto bg-laut-900 border-x border-laut-800 shadow-2xl relative overflow-hidden select-none">
-
-  <header class="p-4 bg-laut-800 flex items-center justify-between z-10 shadow-lg">
-    <div class="flex items-center space-x-3">
-      <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
-        <i class="fa-solid fa-anchor text-laut-800 text-2xl"></i>
-      </div>
-      <div>
-        <h1 class="text-xl font-bold text-white tracking-wide">HT KP NELAYAN</h1>
-        <div class="flex items-center gap-1.5 mt-0.5">
-          <div id="statusLed" class="w-2.5 h-2.5 rounded-full bg-hijau"></div>
-          <p class="text-xs text-laut-100" id="teksKoneksi">Terhubung ke Radio</p>
-        </div>
-      </div>
+  <div id="inAppBrowserWarning" class="hidden fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center p-6 text-center">
+    <div class="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mb-6">
+      <i class="fa-solid fa-triangle-exclamation text-5xl text-red-500"></i>
     </div>
-    
-    <button id="btnPengaturan" class="p-3 bg-laut-900 hover:bg-laut-950 active:scale-95 text-white rounded-xl shadow-inner border border-laut-700">
-      <i class="fa-solid fa-gear text-lg"></i>
+    <h1 class="text-2xl font-bold text-white mb-3">Gunakan Browser Asli!</h1>
+    <p class="text-gray-400 mb-8 max-w-sm">
+      Browser dari Instagram/Telegram memblokir akses mikrofon (PTT tidak akan berfungsi). Silakan buka link ini di <span class="text-white font-bold">Chrome</span> atau <span class="text-white font-bold">Safari</span>.
+    </p>
+    <button id="btnCopyWarningLink" class="w-full max-w-sm py-4 rounded-xl bg-tactical-600 hover:bg-tactical-500 text-white font-bold transition flex items-center justify-center gap-2">
+      <i class="fa-regular fa-copy"></i> Salin Link Website
     </button>
-  </header>
+  </div>
 
-  <main class="flex-1 p-4 flex flex-col space-y-4 overflow-hidden relative">
-    
-    <!-- Layar LCD HT -->
-    <div class="layar-ht rounded-xl p-4 border-4 border-laut-800 flex flex-col justify-between relative overflow-hidden z-10 min-h-[160px]">
-      
-      <!-- Info Jalur & Sinyal -->
-      <div class="flex justify-between items-start font-bold mb-2 border-b-2 border-laut-700/30 pb-2">
-        <div>
-          <span class="text-xs uppercase tracking-wider text-laut-800/80">JALUR FREKUENSI</span>
-          <div id="tampilJalur" class="text-xl flex items-center gap-2">
-            <i class="fa-solid fa-tower-broadcast"></i> LAUT-01
-          </div>
-        </div>
-        <div class="text-right">
-          <span class="text-xs uppercase tracking-wider text-laut-800/80">ANGGOTA AKTIF</span>
-          <div class="text-xl flex items-center justify-end gap-2">
-            <i class="fa-solid fa-users"></i> <span id="tampilJumlahAnggota">1</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Status Komunikasi (Siaga/Bicara) -->
-      <div class="my-auto text-center py-2">
-        <div id="teksStatus" class="text-sm font-bold uppercase mb-1 text-laut-800">
-          STATUS RADIO
-        </div>
-        <div id="teksAktivitas" class="text-3xl font-black tracking-wider truncate">
-          SIAGA
-        </div>
-        <div id="teksNamaPanggilan" class="text-sm font-bold text-laut-800 mt-2 bg-white/30 inline-block px-3 py-1 rounded-full">
-          NAMA: SAYA SENDIRI
-        </div>
-      </div>
+  <div id="setupScreen" class="w-full max-w-sm px-6 flex flex-col items-center z-10">
+    <div class="w-20 h-20 bg-tactical-800 rounded-2xl flex items-center justify-center mb-6 shadow-2xl border border-tactical-600">
+      <i class="fa-solid fa-walkie-talkie text-4xl text-radio-led"></i>
     </div>
+    <h1 class="text-3xl font-black text-white mb-2 uppercase tracking-widest text-center">Tacti<span class="text-radio-led">Call</span></h1>
+    <p class="text-gray-400 text-sm mb-8 text-center">Web-based Multi-user Walkie Talkie</p>
 
-    <div class="bg-laut-800/50 rounded-xl p-3 border border-laut-700 flex flex-col flex-1 max-h-48">
-      <div class="flex justify-between items-center text-sm font-bold text-laut-100 mb-3 border-b border-laut-700 pb-2">
-        <span><i class="fa-solid fa-ship mr-2"></i> Kapal / Anggota di Jalur Ini</span>
+    <div class="w-full bg-tactical-800 p-6 rounded-2xl border border-tactical-600 shadow-2xl">
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Nama Sandi / Panggilan</label>
+        <input type="text" id="inputNickname" placeholder="Contoh: Alpha-1" class="w-full bg-tactical-900 border border-tactical-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-radio-led transition text-center font-bold">
       </div>
-      
-      <div id="daftarAnggota" class="overflow-y-auto space-y-2 pr-1 flex-1 text-sm">
-        <!-- Template Anggota -->
-        <div class="flex justify-between items-center bg-laut-900 p-3 rounded-lg border-l-4 border-hijau shadow">
-          <span class="font-bold text-white">Saya (Nama Kapal)</span>
-          <span class="text-xs bg-hijau/20 text-hijau px-2 py-1 rounded">SIAGA</span>
-        </div>
+      <div class="mb-6">
+        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">ID Frekuensi (Room)</label>
+        <input type="text" id="inputRoomId" placeholder="14450" value="14450" class="w-full bg-tactical-900 border border-tactical-600 rounded-lg px-4 py-3 text-radio-led focus:outline-none focus:border-radio-led transition text-center font-mono-digital text-xl tracking-[0.2em]">
       </div>
-    </div>
-  </main>
-
-  <footer class="p-6 bg-laut-950 border-t-2 border-laut-800 flex flex-col items-center justify-center relative pb-10">
-    
-    <!-- Indikator Visualisasi Suara -->
-    <div class="w-full h-8 mb-6 flex items-end justify-center gap-1 opacity-50" id="visualizerContainer">
-      <!-- Bar suara akan digenerate lewat JS -->
-    </div>
-
-    <!-- Tombol Push to Talk -->
-    <button id="tombolBicara" class="tombol-ptt-siaga w-full py-8 rounded-2xl bg-laut-700 text-white flex flex-col items-center justify-center cursor-pointer select-none border-2 border-laut-300">
-      <i id="ikonBicara" class="fa-solid fa-microphone text-5xl mb-3"></i>
-      <span id="labelBicara" class="text-2xl font-black tracking-wider uppercase">TEKAN UNTUK BICARA</span>
-    </button>
-
-    <div class="mt-6 text-center">
-      <p class="text-sm text-laut-300"><i class="fa-solid fa-circle-info"></i> Gantian ngomong, jangan bersamaan.</p>
-    </div>
-  </footer>
-
-  <div id="modalPengaturan" class="fixed inset-0 bg-laut-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-laut-900 border-2 border-laut-700 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl">
-      
-      <div class="bg-laut-800 p-4 flex justify-between items-center border-b border-laut-700">
-        <h3 class="font-bold text-white text-lg flex items-center gap-2">
-          <i class="fa-solid fa-sliders text-oranye-500"></i> Pengaturan Radio
-        </h3>
-        <button id="btnTutupPengaturan" class="text-laut-100 hover:text-white p-2 bg-laut-900 rounded-lg">
-          <i class="fa-solid fa-xmark text-xl"></i>
-        </button>
-      </div>
-
-      <div class="p-5 space-y-5">
-        <!-- Ganti Identitas & Jalur -->
-        <div class="space-y-4 bg-laut-800 p-4 rounded-xl border border-laut-700">
-          <div>
-            <label class="block text-sm font-bold text-laut-100 mb-2">Nama Kapal / Panggilan Anda</label>
-            <input type="text" id="inputNama" placeholder="Contoh: BERKAH LAUT 01" class="w-full bg-laut-950 border border-laut-700 rounded-lg px-4 py-3 text-white font-bold focus:border-oranye-500 outline-none text-lg uppercase">
-          </div>
-
-          <div>
-            <label class="block text-sm font-bold text-laut-100 mb-2">Pilih Jalur (Frekuensi)</label>
-            <input type="text" id="inputJalur" placeholder="LAUT-01" class="w-full bg-laut-950 border border-laut-700 rounded-lg px-4 py-3 text-white font-bold focus:border-oranye-500 outline-none text-lg uppercase mb-2">
-            <button id="btnSimpanJalur" class="w-full bg-hijau hover:bg-green-600 text-white font-bold px-4 py-3 rounded-lg text-lg shadow-md active:translate-y-1 transition-transform">
-              <i class="fa-solid fa-check mr-2"></i> SIMPAN & GABUNG JALUR
-            </button>
-          </div>
-        </div>
-
-        <!-- Bagikan Link -->
-        <div class="border-t border-laut-700 pt-4 flex flex-col items-center justify-center space-y-3">
-          <p class="text-sm text-laut-100 font-bold text-center">Ajak teman masuk ke jalur ini:</p>
-          <div id="qrcode" class="p-3 bg-white rounded-xl shadow-lg"></div>
-          <button id="btnBagikanLink" class="w-full bg-laut-700 hover:bg-laut-600 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 shadow-md">
-            <i class="fa-solid fa-share-nodes"></i> Bagikan Link Ke WhatsApp
-          </button>
-        </div>
-
-        <!-- Opsi Tambahan -->
-        <div class="flex justify-between items-center text-sm font-bold text-laut-100 pt-2">
-          <span>Suara Kresek Radio (Efek)</span>
-          <input type="checkbox" id="toggleKresek" checked class="w-6 h-6 accent-oranye-500">
-        </div>
-      </div>
+      <button id="btnJoin" class="w-full py-4 rounded-xl bg-radio-led hover:bg-emerald-400 text-tactical-900 font-black uppercase tracking-widest transition shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+        Hubungkan
+      </button>
     </div>
   </div>
 
+  <div id="radioScreen" class="hidden w-full max-w-md h-full sm:h-auto sm:max-h-[90vh] flex flex-col items-center p-2 sm:p-4 z-10 relative">
+    
+    <!-- Antena (Visual only) -->
+    <div class="w-4 h-16 sm:h-24 bg-tactical-700 rounded-t-full border-2 border-b-0 border-tactical-900 shadow-inner absolute -top-12 sm:-top-20 left-12"></div>
+    <div class="w-6 h-8 bg-tactical-800 border-2 border-b-0 border-tactical-900 rounded-t-lg absolute -top-6 sm:-top-8 right-16"></div>
+
+    <!-- Main HT Body -->
+    <div class="ht-body w-full h-full sm:h-[800px] rounded-[2rem] sm:rounded-[3rem] p-4 sm:p-6 flex flex-col relative overflow-hidden">
+      
+      <!-- Top Panel: LEDs & Brand -->
+      <div class="flex justify-between items-center mb-4 px-2">
+        <div class="flex gap-2">
+          <!-- RX/TX LED -->
+          <div id="ledIndicator" class="w-4 h-4 rounded-full bg-radio-ledOff border border-black shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"></div>
+          <div id="pwrIndicator" class="w-4 h-4 rounded-full bg-radio-led border border-black shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]"></div>
+        </div>
+        <div class="text-tactical-500 font-black text-xl tracking-tighter uppercase italic">TactiCall <span class="text-sm">V2</span></div>
+      </div>
+
+      <!-- LCD Screen -->
+      <div class="w-full bg-black p-2 rounded-xl border-4 border-tactical-700 shadow-inner mb-6 relative">
+        <div class="ht-screen w-full h-32 rounded-lg p-3 flex flex-col relative overflow-hidden">
+          <div class="absolute inset-0 scan-line opacity-30 pointer-events-none"></div>
+          
+          <!-- Top Row -->
+          <div class="flex justify-between items-start">
+            <span class="font-mono-digital text-radio-led text-xs" id="statusText">CONNECTING...</span>
+            <div class="flex gap-1">
+              <i class="fa-solid fa-signal text-radio-led text-xs"></i>
+              <span id="userCount" class="font-mono-digital text-radio-led text-xs">1 P</span>
+            </div>
+          </div>
+
+          <!-- Main Freq -->
+          <div class="flex-1 flex items-center justify-center">
+            <span id="displayFreq" class="font-mono-digital text-radio-led text-5xl tracking-widest">---</span>
+          </div>
+
+          <!-- Bottom Row -->
+          <div class="flex justify-between items-end">
+            <span class="font-mono-digital text-radio-led text-xs">FM-N</span>
+            <span id="displayNickname" class="font-mono-digital text-radio-led text-xs max-w-[120px] truncate">CALLSIGN</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Users in Room List -->
+      <div class="w-full bg-tactical-800 rounded-xl p-3 border border-tactical-700 mb-6 flex-1 min-h-[100px] overflow-y-auto custom-scrollbar">
+        <h3 class="text-[10px] font-bold text-tactical-500 uppercase tracking-widest mb-2 border-b border-tactical-700 pb-1">Anggota Freq</h3>
+        <ul id="userList" class="space-y-1.5">
+          <!-- Users will be injected here -->
+        </ul>
+      </div>
+
+      <div class="w-full flex justify-center mb-8">
+        <div class="grid grid-cols-8 gap-2 p-2">
+          <!-- Generating grill dots visually -->
+          <script>
+            for(let i=0; i<32; i++) {
+              document.write('<div class="w-3 h-3 rounded-full grill-dot"></div>');
+            }
+          </script>
+        </div>
+      </div>
+
+      <!-- PTT Button Area -->
+      <div class="w-full flex justify-center items-center mt-auto pb-4">
+        <button id="btnPTT" class="ptt-btn relative w-32 h-32 rounded-full border-4 border-tactical-900 flex items-center justify-center group outline-none select-none">
+          <div class="absolute inset-2 rounded-full border-2 border-tactical-600/30"></div>
+          <span class="font-black text-tactical-500 tracking-widest text-lg group-hover:text-tactical-400 group-active:text-radio-led transition-colors">PTT</span>
+        </button>
+      </div>
+
+      <!-- Utilities -->
+      <div class="absolute bottom-6 left-6">
+        <button id="btnCopyRoom" class="w-10 h-10 rounded-full bg-tactical-700 hover:bg-tactical-600 border border-tactical-900 flex items-center justify-center text-tactical-400 shadow-lg" title="Salin ID Freq">
+          <i class="fa-solid fa-share-nodes"></i>
+        </button>
+      </div>
+      <div class="absolute bottom-6 right-6">
+        <button id="btnLeave" class="w-10 h-10 rounded-full bg-tactical-700 hover:bg-red-900/50 border border-tactical-900 flex items-center justify-center text-tactical-400 hover:text-red-500 shadow-lg" title="Tinggalkan Frekuensi">
+          <i class="fa-solid fa-power-off"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Hidden Container for Remote Audios -->
+  <div id="audioContainer" class="hidden"></div>
+
   <script>
-    // State Aplikasi
-    const APP = {
-      nama: localStorage.getItem('ht_kp_nama') || 'NELAYAN-' + Math.floor(100 + Math.random() * 900),
-      jalur: ambilJalurDariUrl() || 'LAUT-01',
-      peer: null,
-      idSaya: null,
-      streamSaya: null,
-      koneksiData: new Map(), // PeerID -> DataConnection
-      panggilanSuara: new Map(), // PeerID -> MediaCall
-      anggotaAktif: new Map(), // PeerID -> { nama: string }
-      sedangBicara: false,
-      sedangMendengar: false,
-      namaPembicaraAktif: null,
-      audioCtx: null,
-      analyserNode: null,
-      efekKresekAktif: true
-    };
-
-    function ambilJalurDariUrl() {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('jalur') ? params.get('jalur').toUpperCase() : null;
+    // 1. DETEKSI IN-APP BROWSER
+    function detectInAppBrowser() {
+      const ua = navigator.userAgent || navigator.vendor || window.opera;
+      const isInstagram = (ua.indexOf("Instagram") > -1);
+      const isTelegram = (ua.indexOf("Telegram") > -1) || (ua.indexOf("FBAV") > -1 && ua.indexOf("FBAN") > -1); 
+      const isFacebook = (ua.indexOf("FBAV") > -1) || (ua.indexOf("FBAN") > -1);
+      const isLine = (ua.indexOf("Line") > -1);
+      const isTikTok = (ua.indexOf("TikTok") > -1) || (ua.indexOf("Bytedance") > -1);
+      return (isInstagram || isTelegram || isFacebook || isLine || isTikTok);
     }
 
-    // Elemen DOM
-    const ui = {
-      statusLed: document.getElementById('statusLed'),
-      teksKoneksi: document.getElementById('teksKoneksi'),
-      tampilJalur: document.getElementById('tampilJalur'),
-      tampilJumlahAnggota: document.getElementById('tampilJumlahAnggota'),
-      teksStatus: document.getElementById('teksStatus'),
-      teksAktivitas: document.getElementById('teksAktivitas'),
-      teksNamaPanggilan: document.getElementById('teksNamaPanggilan'),
-      daftarAnggota: document.getElementById('daftarAnggota'),
-      
-      tombolBicara: document.getElementById('tombolBicara'),
-      ikonBicara: document.getElementById('ikonBicara'),
-      labelBicara: document.getElementById('labelBicara'),
-      visualizerContainer: document.getElementById('visualizerContainer'),
-      
-      modalPengaturan: document.getElementById('modalPengaturan'),
-      inputNama: document.getElementById('inputNama'),
-      inputJalur: document.getElementById('inputJalur')
-    };
+    if (detectInAppBrowser()) {
+      document.getElementById('inAppBrowserWarning').classList.remove('hidden');
+      document.getElementById('btnCopyWarningLink').addEventListener('click', () => {
+        navigator.clipboard.writeText(window.location.href).catch(e => {
+          const textArea = document.createElement("textarea");
+          textArea.value = window.location.href;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+        });
+        alert('Link disalin! Buka di Chrome/Safari.');
+      });
+    }
 
-    function siapkanAudio() {
-      if (!APP.audioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        APP.audioCtx = new AudioContext();
-        APP.analyserNode = APP.audioCtx.createAnalyser();
-        APP.analyserNode.fftSize = 32; // Lebih kecil = bar visualizer lebih sedikit & besar
+    // 2. STATE VARIABLES
+    let peer = null;
+    let mqttClient = null;
+    let myPeerId = null;
+    let myNickname = 'Alpha-1';
+    let currentRoom = null;
+    
+    let localStream = null;
+    let localAudioTrack = null;
+    let isTransmitting = false;
+
+    // Menyimpan daftar peer yang terhubung: { peerId: { call: MediaConnection, nickname: string } }
+    const connectedPeers = {}; 
+    const roomMembers = {}; // Menyimpan data nickname member { peerId: nickname }
+
+    // Audio Context & Nodes untuk Efek Walkie Talkie
+    let audioCtx = null;
+    let beepOscillator = null;
+
+    // DOM Elements
+    const setupScreen = document.getElementById('setupScreen');
+    const radioScreen = document.getElementById('radioScreen');
+    const inputNickname = document.getElementById('inputNickname');
+    const inputRoomId = document.getElementById('inputRoomId');
+    const displayFreq = document.getElementById('displayFreq');
+    const displayNickname = document.getElementById('displayNickname');
+    const statusText = document.getElementById('statusText');
+    const userCount = document.getElementById('userCount');
+    const userList = document.getElementById('userList');
+    const ledIndicator = document.getElementById('ledIndicator');
+    const btnPTT = document.getElementById('btnPTT');
+    const audioContainer = document.getElementById('audioContainer');
+
+    // Cek URL params untuk auto-fill room
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('freq')) {
+      inputRoomId.value = urlParams.get('freq');
+    }
+
+    // 3. AUDIO SYSTEM (Beeps & Filters)
+    async function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
-      if (APP.audioCtx.state === 'suspended') {
-        APP.audioCtx.resume();
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
       }
-    }
 
-    // Bunyi Kresek (Squelch) khas HT saat mulai/berhenti bicara
-    function bunyiKresekHT() {
-      if (!APP.efekKresekAktif || !APP.audioCtx) return;
       try {
-        const bufferSize = APP.audioCtx.sampleRate * 0.1; // 100ms
-        const buffer = APP.audioCtx.createBuffer(1, bufferSize, APP.audioCtx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          data[i] = Math.random() * 2 - 1; // White noise
-        }
-        
-        const noise = APP.audioCtx.createBufferSource();
-        noise.buffer = buffer;
-        
-        const filter = APP.audioCtx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.value = 1500;
-        
-        const gain = APP.audioCtx.createGain();
-        gain.gain.setValueAtTime(0.2, APP.audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, APP.audioCtx.currentTime + 0.08);
-        
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(APP.audioCtx.destination);
-        
-        noise.start();
-      } catch (e) { console.warn('Efek suara gagal:', e); }
-    }
-
-    // Bunyi "Tit-tit" saat selesai bicara (Roger Beep)
-    function bunyiSelesaiGanti() {
-      if (!APP.efekKresekAktif || !APP.audioCtx) return;
-      try {
-        const osc = APP.audioCtx.createOscillator();
-        const gain = APP.audioCtx.createGain();
-        osc.type = 'sine';
-        const now = APP.audioCtx.currentTime;
-        
-        osc.frequency.setValueAtTime(1000, now);
-        osc.frequency.setValueAtTime(1500, now + 0.05);
-        
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-        
-        osc.connect(gain);
-        gain.connect(APP.audioCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.15);
-      } catch (e) { console.warn('Efek suara roger beep gagal:', e); }
-    }
-
-    async function aktifkanMikrofon() {
-      try {
-        APP.streamSaya = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
+        // Ambil akses mic HANYA sekali saat join
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: { 
+            echoCancellation: true, 
+            noiseSuppression: true, 
+            autoGainControl: true 
           },
           video: false
         });
-
-        // Mute mic bawaannya, baru dinyalakan saat tombol PTT ditekan
-        APP.streamSaya.getAudioTracks().forEach(track => track.enabled = false);
-
-        siapkanAudio();
-        const source = APP.audioCtx.createMediaStreamSource(APP.streamSaya);
-        source.connect(APP.analyserNode);
         
+        localAudioTrack = stream.getAudioTracks()[0];
+        // DEFAULT: MUTE MIC (Karena PTT)
+        localAudioTrack.enabled = false; 
+
+        // Terapkan Filter DSP "Walkie Talkie" ke mic kita untuk dikirim ke orang lain
+        const source = audioCtx.createMediaStreamSource(stream);
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1500; // Freq vocal HT
+        filter.Q.value = 2.5; // Resonansi
+        
+        // Kompresor agar suara kencang
+        const compressor = audioCtx.createDynamicsCompressor();
+        compressor.threshold.value = -50;
+        compressor.knee.value = 40;
+        compressor.ratio.value = 12;
+        compressor.attack.value = 0;
+        compressor.release.value = 0.25;
+
+        const dest = audioCtx.createMediaStreamDestination();
+        
+        source.connect(filter);
+        filter.connect(compressor);
+        compressor.connect(dest);
+
+        localStream = dest.stream; // Ini yang akan dikirim via PeerJS
         return true;
       } catch (err) {
-        console.error('Gagal akses mic:', err);
-        alert('Mohon izinkan akses Mikrofon agar bisa dipakai berbicara.');
+        alert("Akses Mikrofon ditolak! PTT tidak akan berfungsi.");
+        console.error(err);
         return false;
       }
     }
 
-    function sambungkanKeJaringan() {
-      ui.teksKoneksi.innerText = "Mencari sinyal...";
-      ui.statusLed.className = "w-2.5 h-2.5 rounded-full bg-oranye-500 animasi-sinyal";
-
-      // Bikin ID unik tapi terikat dengan nama jalur agar gampang saling ketemu
-      const namaJalurBersih = APP.jalur.replace(/[^A-Z0-9]/gi, '').toUpperCase();
-      const acak = Math.random().toString(36).substring(2, 6);
-      APP.idSaya = `htnelayan-${namaJalurBersih}-${acak}`;
-
-      // Koneksi ke server PeerJS publik
-      APP.peer = new Peer(APP.idSaya, { debug: 1 });
-
-      APP.peer.on('open', (id) => {
-        ui.teksKoneksi.innerText = "Sinyal Bagus";
-        ui.statusLed.className = "w-2.5 h-2.5 rounded-full bg-hijau";
-        perbaruiTampilan();
+    // Fungsi untuk membunyikan nada Roger Beep khas HT
+    function playHTBeep(type) {
+      if (!audioCtx) return;
+      
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      const now = audioCtx.currentTime;
+      if (type === 'start') {
+        // Nada saat tombol PTT ditekan
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, now);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.1, now + 0.01);
+        osc.start(now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        osc.stop(now + 0.1);
+      } else if (type === 'end') {
+        // Nada ganda khas saat tombol dilepas (Roger beep)
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(1200, now);
+        gain.gain.setValueAtTime(0.05, now);
         
-        // Broadcast kehadiran ke semua yang mungkin konek
-        kirimDataKeSemua({ tipe: 'MASUK', idPeer: APP.idSaya, nama: APP.nama });
-      });
-
-      // Menerima sambungan data (untuk teks/sinyal tombol)
-      APP.peer.on('connection', (koneksi) => {
-        aturKoneksiData(koneksi);
-      });
-
-      // Menerima panggilan suara
-      APP.peer.on('call', (panggilan) => {
-        panggilan.answer(APP.streamSaya);
-        panggilan.on('stream', (streamLain) => {
-          pasangAudioOrangLain(panggilan.peer, streamLain);
-        });
-        APP.panggilanSuara.set(panggilan.peer, panggilan);
-      });
-
-      APP.peer.on('error', (err) => {
-        ui.teksKoneksi.innerText = "Sinyal Putus";
-        ui.statusLed.className = "w-2.5 h-2.5 rounded-full bg-merah";
-      });
-    }
-
-    function aturKoneksiData(koneksi) {
-      APP.koneksiData.set(koneksi.peer, koneksi);
-
-      koneksi.on('open', () => {
-        // Kenalan (kirim nama)
-        koneksi.send({ tipe: 'KENALAN', idPeer: APP.idSaya, nama: APP.nama });
-
-        // Mulai telepon audio di balik layar jika belum
-        if (!APP.panggilanSuara.has(koneksi.peer) && APP.streamSaya) {
-          const panggilan = APP.peer.call(koneksi.peer, APP.streamSaya);
-          panggilan.on('stream', (streamLain) => {
-            pasangAudioOrangLain(koneksi.peer, streamLain);
-          });
-          APP.panggilanSuara.set(koneksi.peer, panggilan);
-        }
-      });
-
-      koneksi.on('data', (data) => tanganiPesanMasuk(koneksi.peer, data));
-
-      koneksi.on('close', () => {
-        APP.koneksiData.delete(koneksi.peer);
-        APP.anggotaAktif.delete(koneksi.peer);
-        APP.panggilanSuara.delete(koneksi.peer);
-        hapusAudioOrangLain(koneksi.peer);
-        perbaruiDaftarAnggota();
-      });
-    }
-
-    function pasangAudioOrangLain(idPeer, stream) {
-      let elemenAudio = document.getElementById(`audio-${idPeer}`);
-      if (!elemenAudio) {
-        elemenAudio = document.createElement('audio');
-        elemenAudio.id = `audio-${idPeer}`;
-        elemenAudio.autoplay = true;
-        elemenAudio.playsInline = true;
-        document.body.appendChild(elemenAudio);
-      }
-      elemenAudio.srcObject = stream;
-    }
-
-    function hapusAudioOrangLain(idPeer) {
-      const elemenAudio = document.getElementById(`audio-${idPeer}`);
-      if (elemenAudio) elemenAudio.remove();
-    }
-
-    function tanganiPesanMasuk(idPeer, data) {
-      switch (data.tipe) {
-        case 'KENALAN':
-        case 'MASUK':
-          APP.anggotaAktif.set(idPeer, { nama: data.nama || 'Anggota Tidak Dikenal' });
-          perbaruiDaftarAnggota();
-          break;
-
-        case 'MULAI_BICARA':
-          if (APP.sedangBicara) return; // Abaikan jika kita yang lagi ngomong
-          APP.sedangMendengar = true;
-          APP.namaPembicaraAktif = data.nama;
-          bunyiKresekHT();
-          tampilanMendengar(true);
-          break;
-
-        case 'BERHENTI_BICARA':
-          APP.sedangMendengar = false;
-          APP.namaPembicaraAktif = null;
-          bunyiSelesaiGanti();
-          tampilanMendengar(false);
-          break;
+        osc.frequency.setValueAtTime(1600, now + 0.08); // Nada kedua
+        
+        osc.start(now);
+        osc.stop(now + 0.16);
       }
     }
 
-    function kirimDataKeSemua(data) {
-      APP.koneksiData.forEach((koneksi) => {
-        if (koneksi.open) koneksi.send(data);
-      });
-    }
+    // 4. NETWORKING (PeerJS & MQTT)
+    document.getElementById('btnJoin').addEventListener('click', async () => {
+      myNickname = inputNickname.value.trim() || 'Alpha-' + Math.floor(Math.random()*99);
+      currentRoom = inputRoomId.value.trim().toUpperCase() || '14450';
+      
+      // Update UI
+      setupScreen.classList.add('hidden');
+      radioScreen.classList.remove('hidden');
+      displayFreq.innerText = currentRoom;
+      displayNickname.innerText = myNickname;
+      statusText.innerText = 'INIT AUDIO...';
 
-    function mulaiBicara() {
-      // Jika jalur dipakai orang, tidak bisa bicara (Half-Duplex)
-      if (APP.sedangMendengar) {
-        alert("Gantian! Ada yang sedang bicara.");
+      const audioReady = await initAudio();
+      if (!audioReady) {
+        statusText.innerText = 'MIC ERROR';
         return;
       }
-      if (APP.sedangBicara) return;
 
-      siapkanAudio();
-      if (navigator.vibrate) navigator.vibrate(50); // Getar HP
-      
-      APP.sedangBicara = true;
-      bunyiKresekHT();
+      statusText.innerText = 'CONNECTING...';
+      initPeerAndSignaling();
+    });
 
-      // Nyalakan Mikrofon
-      if (APP.streamSaya) {
-        APP.streamSaya.getAudioTracks().forEach(track => track.enabled = true);
-      }
+    function initPeerAndSignaling() {
+      // 4a. Init PeerJS (Untuk Audio Mesh)
+      const randomId = 'ht_' + Math.random().toString(36).substring(2, 9);
+      peer = new Peer(randomId, {
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ]
+        }
+      });
 
-      kirimDataKeSemua({ tipe: 'MULAI_BICARA', nama: APP.nama });
-      tampilanBicara(true);
-    }
-
-    function berhentiBicara() {
-      if (!APP.sedangBicara) return;
-      
-      if (navigator.vibrate) navigator.vibrate([30, 30]);
-
-      APP.sedangBicara = false;
-
-      // Matikan Mikrofon
-      if (APP.streamSaya) {
-        APP.streamSaya.getAudioTracks().forEach(track => track.enabled = false);
-      }
-
-      kirimDataKeSemua({ tipe: 'BERHENTI_BICARA', nama: APP.nama });
-      bunyiSelesaiGanti();
-      tampilanBicara(false);
-    }
-
-    function tampilanBicara(aktif) {
-      if (aktif) {
-        ui.tombolBicara.className = "tombol-ptt aktif w-full py-8 rounded-2xl bg-oranye-500 text-white flex flex-col items-center justify-center select-none border-2 border-oranye-600";
-        ui.ikonBicara.className = "fa-solid fa-microphone-lines text-5xl mb-3 text-white animasi-sinyal";
-        ui.labelBicara.innerText = "MENGIRIM SUARA...";
+      peer.on('open', (id) => {
+        myPeerId = id;
+        statusText.innerText = 'ONLINE';
+        statusText.classList.replace('text-radio-led', 'text-emerald-400');
         
-        ui.teksStatus.innerText = "ANDA SEDANG BICARA";
-        ui.teksStatus.className = "text-sm font-bold uppercase mb-1 text-oranye-600 animasi-sinyal";
-        ui.teksAktivitas.innerText = "SUARA TERKIRIM";
-        ui.teksAktivitas.className = "text-3xl font-black tracking-wider text-oranye-600";
-      } else {
-        ui.tombolBicara.className = "tombol-ptt-siaga w-full py-8 rounded-2xl bg-laut-700 text-white flex flex-col items-center justify-center cursor-pointer select-none border-2 border-laut-300";
-        ui.ikonBicara.className = "fa-solid fa-microphone text-5xl mb-3 text-white";
-        ui.labelBicara.innerText = "TEKAN UNTUK BICARA";
-        tampilanSiaga();
-      }
-      perbaruiDaftarAnggota();
-    }
+        // Simpan info diri sendiri
+        roomMembers[myPeerId] = { nickname: myNickname, isTalking: false };
+        updateUserListUI();
 
-    function tampilanMendengar(aktif) {
-      if (aktif) {
-        ui.tombolBicara.classList.add('opacity-50', 'pointer-events-none');
-        
-        ui.teksStatus.innerText = "MENERIMA SUARA";
-        ui.teksStatus.className = "text-sm font-bold uppercase mb-1 text-hijau animasi-sinyal";
-        ui.teksAktivitas.innerText = APP.namaPembicaraAktif;
-        ui.teksAktivitas.className = "text-3xl font-black tracking-wider text-laut-900 truncate px-2";
-      } else {
-        ui.tombolBicara.classList.remove('opacity-50', 'pointer-events-none');
-        tampilanSiaga();
-      }
-      perbaruiDaftarAnggota();
-    }
+        // 4b. Init MQTT (Untuk Discovery Siapa di Room)
+        initMQTT();
+      });
 
-    function tampilanSiaga() {
-      ui.teksStatus.innerText = "STATUS RADIO";
-      ui.teksStatus.className = "text-sm font-bold uppercase mb-1 text-laut-800";
-      ui.teksAktivitas.innerText = "SIAGA";
-      ui.teksAktivitas.className = "text-3xl font-black tracking-wider text-laut-900";
-    }
+      // Menerima panggilan dari peer lain di room
+      peer.on('call', (call) => {
+        // Otomatis angkat dengan localStream kita
+        call.answer(localStream);
+        handleNewConnection(call);
+      });
 
-    function perbaruiTampilan() {
-      ui.tampilJalur.innerHTML = `<i class="fa-solid fa-tower-broadcast"></i> ${APP.jalur}`;
-      ui.teksNamaPanggilan.innerText = `NAMA KAPAL: ${APP.nama}`;
-      ui.inputNama.value = APP.nama;
-      ui.inputJalur.value = APP.jalur;
-      perbaruiDaftarAnggota();
-    }
-
-    function perbaruiDaftarAnggota() {
-      const total = APP.anggotaAktif.size + 1;
-      ui.tampilJumlahAnggota.innerText = total;
-
-      ui.daftarAnggota.innerHTML = `
-        <div class="flex justify-between items-center bg-laut-900 p-3 rounded-lg border-l-4 ${APP.sedangBicara ? 'border-oranye-500' : 'border-laut-700'} shadow mb-2">
-          <span class="font-bold text-white flex items-center gap-2">
-             <i class="fa-solid fa-user-circle text-laut-300"></i> ${APP.nama} (Anda)
-          </span>
-          <span class="text-[10px] font-bold ${APP.sedangBicara ? 'bg-oranye-500/20 text-oranye-500' : 'bg-laut-700/50 text-laut-300'} px-2 py-1 rounded">
-            ${APP.sedangBicara ? 'BICARA' : 'SIAGA'}
-          </span>
-        </div>
-      `;
-
-      APP.anggotaAktif.forEach((info, idPeer) => {
-        const diaBicara = APP.namaPembicaraAktif === info.nama;
-        const div = document.createElement('div');
-        div.className = `flex justify-between items-center bg-laut-900 p-3 rounded-lg border-l-4 ${diaBicara ? 'border-hijau' : 'border-laut-800'} shadow mb-2`;
-        div.innerHTML = `
-          <span class="font-bold text-white flex items-center gap-2 truncate pr-2">
-            <i class="fa-solid fa-ship ${diaBicara ? 'text-hijau animasi-sinyal' : 'text-laut-700'}"></i> 
-            <span class="truncate">${info.nama}</span>
-          </span>
-          <span class="text-[10px] font-bold ${diaBicara ? 'bg-hijau/20 text-hijau' : 'bg-laut-800 text-laut-300'} px-2 py-1 rounded">
-            ${diaBicara ? 'BICARA' : 'AKTIF'}
-          </span>
-        `;
-        ui.daftarAnggota.appendChild(div);
+      peer.on('error', (err) => {
+        console.error('PeerJS Error:', err);
+        statusText.innerText = 'CONN ERR';
       });
     }
 
-    function buatVisualizer() {
-      ui.visualizerContainer.innerHTML = '';
-      for(let i=0; i<10; i++){
-        const bar = document.createElement('div');
-        bar.className = 'w-2 bg-laut-300 rounded-t-sm transition-all duration-75';
-        bar.style.height = '4px';
-        bar.id = `vbar-${i}`;
-        ui.visualizerContainer.appendChild(bar);
-      }
-    }
+    function initMQTT() {
+      const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
+      mqttClient = mqtt.connect(brokerUrl, {
+        clientId: 'htweb_' + myPeerId,
+        clean: true
+      });
 
-    function renderVisualizer() {
-      requestAnimationFrame(renderVisualizer);
-      if (!APP.analyserNode) return;
+      const topicRoom = `htweb/room/${currentRoom}`;
+      const topicSignal = `htweb/signal/${currentRoom}`; // Untuk status PTT
 
-      const bufferLength = APP.analyserNode.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      APP.analyserNode.getByteFrequencyData(dataArray);
+      mqttClient.on('connect', () => {
+        mqttClient.subscribe(topicRoom);
+        mqttClient.subscribe(topicSignal);
+        
+        // Broadcast "Saya Join"
+        mqttClient.publish(topicRoom, JSON.stringify({
+          type: 'join',
+          peerId: myPeerId,
+          nickname: myNickname
+        }));
+      });
 
-      // Ambil 10 sampel untuk 10 bar
-      const step = Math.floor(bufferLength / 10);
-      
-      for (let i = 0; i < 10; i++) {
-        const bar = document.getElementById(`vbar-${i}`);
-        if(bar) {
-          // Normalisasi nilai 0-255 ke tinggi 4px - 32px
-          const nilai = dataArray[i * step] || 0;
-          const tinggi = Math.max(4, (nilai / 255) * 32);
-          bar.style.height = `${tinggi}px`;
+      mqttClient.on('message', (topic, message) => {
+        try {
+          const data = JSON.parse(message.toString());
           
-          if(APP.sedangBicara) {
-            bar.className = 'w-2 bg-oranye-500 rounded-t-sm transition-all duration-75';
-          } else if (APP.sedangMendengar) {
-            bar.className = 'w-2 bg-hijau rounded-t-sm transition-all duration-75';
-          } else {
-            bar.className = 'w-2 bg-laut-300 rounded-t-sm transition-all duration-75';
+          if (topic === topicRoom) {
+            handleRoomMessage(data);
+          } else if (topic === topicSignal) {
+            handleSignalMessage(data);
           }
-        }
-      }
-    }
-
-    function pasangEvent() {
-      // Event Tombol PTT (Dukung Sentuhan HP & Mouse)
-      const tanganiTekan = (e) => { e.preventDefault(); mulaiBicara(); };
-      const tanganiLepas = (e) => { e.preventDefault(); berhentiBicara(); };
-
-      ui.tombolBicara.addEventListener('mousedown', tanganiTekan);
-      ui.tombolBicara.addEventListener('mouseup', tanganiLepas);
-      ui.tombolBicara.addEventListener('mouseleave', tanganiLepas);
-      
-      ui.tombolBicara.addEventListener('touchstart', tanganiTekan, { passive: false });
-      ui.tombolBicara.addEventListener('touchend', tanganiLepas, { passive: false });
-      ui.tombolBicara.addEventListener('touchcancel', tanganiLepas, { passive: false });
-
-      // Modal Pengaturan
-      document.getElementById('btnPengaturan').onclick = () => {
-        buatQRCode();
-        ui.modalPengaturan.classList.remove('hidden');
-      };
-      
-      document.getElementById('btnTutupPengaturan').onclick = () => ui.modalPengaturan.classList.add('hidden');
-
-      // Simpan Pengaturan
-      document.getElementById('btnSimpanJalur').onclick = () => {
-        const namaBaru = ui.inputNama.value.trim().toUpperCase() || APP.nama;
-        const jalurBaru = ui.inputJalur.value.trim().toUpperCase().replace(/\s+/g, '-') || APP.jalur;
-
-        APP.nama = namaBaru;
-        APP.jalur = jalurBaru;
-        localStorage.setItem('ht_kp_nama', namaBaru);
-
-        // Update URL biar bisa dibagikan
-        const urlBaru = `${window.location.pathname}?jalur=${encodeURIComponent(jalurBaru)}`;
-        window.history.replaceState({ path: urlBaru }, '', urlBaru);
-
-        ui.modalPengaturan.classList.add('hidden');
-        perbaruiTampilan();
-
-        // Reset koneksi ke jalur baru
-        if (APP.peer) APP.peer.destroy();
-        sambungkanKeJaringan();
-      };
-
-      // Tombol Bagikan
-      document.getElementById('btnBagikanLink').onclick = () => {
-        const link = window.location.href;
-        const teks = `Ayo gabung di HT Jalur ${APP.jalur}! Klik link ini: ${link}`;
-        
-        if (navigator.share) {
-          navigator.share({ title: 'HT KP Nelayan', text: teks, url: link })
-            .catch(err => console.warn('Gagal membagikan', err));
-        } else {
-          // Fallback buka WA Web/App
-          window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(teks)}`);
-        }
-      };
-
-      // Toggle Kresek
-      document.getElementById('toggleKresek').onchange = (e) => APP.efekKresekAktif = e.target.checked;
-    }
-
-    function buatQRCode() {
-      const qrcodeContainer = document.getElementById('qrcode');
-      qrcodeContainer.innerHTML = '';
-      new QRCode(qrcodeContainer, {
-        text: window.location.href,
-        width: 150,
-        height: 150,
-        colorDark: '#052659',
-        colorLight: '#ffffff'
+        } catch (e) {}
       });
     }
 
-    // Memulai Aplikasi saat halaman selesai dimuat
-    window.onload = async () => {
-      perbaruiTampilan();
-      buatVisualizer();
-      pasangEvent();
-      renderVisualizer();
+    function handleRoomMessage(data) {
+      // Abaikan pesan dari diri sendiri
+      if (data.peerId === myPeerId) return;
 
-      // Coba akses mic, kalau dapat langsung konek ke jaringan peer
-      const micDiizinkan = await aktifkanMikrofon();
-      if (micDiizinkan) {
-        sambungkanKeJaringan();
+      if (data.type === 'join') {
+        // Ada orang baru masuk. 
+        // 1. Simpan nickname-nya
+        roomMembers[data.peerId] = { nickname: data.nickname, isTalking: false };
+        
+        // 2. Balas "Saya sudah di sini" agar dia tahu kita ada
+        mqttClient.publish(`htweb/room/${currentRoom}`, JSON.stringify({
+          type: 'present',
+          peerId: myPeerId,
+          nickname: myNickname,
+          targetPeerId: data.peerId
+        }));
+
+        // 3. TELEPON dia via PeerJS (Hanya salah satu yang nelpon untuk mencegah double connection)
+        // Kita bandingkan string ID, yang lebih besar yang nelpon.
+        if (myPeerId > data.peerId && !connectedPeers[data.peerId]) {
+          const call = peer.call(data.peerId, localStream);
+          handleNewConnection(call);
+        }
+        updateUserListUI();
+      } 
+      else if (data.type === 'present' && data.targetPeerId === myPeerId) {
+        // Menerima balasan dari orang yang sudah ada di room
+        roomMembers[data.peerId] = { nickname: data.nickname, isTalking: false };
+        
+        if (myPeerId > data.peerId && !connectedPeers[data.peerId]) {
+          const call = peer.call(data.peerId, localStream);
+          handleNewConnection(call);
+        }
+        updateUserListUI();
       }
+      else if (data.type === 'leave') {
+        removePeer(data.peerId);
+      }
+    }
+
+    function handleSignalMessage(data) {
+      if (data.peerId === myPeerId) return;
+
+      if (data.type === 'tx_start') {
+        // Seseorang menekan PTT
+        if (roomMembers[data.peerId]) {
+          roomMembers[data.peerId].isTalking = true;
+          updateUserListUI();
+          // Ubah lampu LED kita jadi hijau terang (RX - Receiving)
+          setLed('RX');
+        }
+      } else if (data.type === 'tx_end') {
+        // Seseorang melepas PTT
+        if (roomMembers[data.peerId]) {
+          roomMembers[data.peerId].isTalking = false;
+          updateUserListUI();
+          setLed('OFF');
+        }
+      }
+    }
+
+    // Mengelola stream audio masuk
+    function handleNewConnection(call) {
+      const remotePeerId = call.peer;
+      connectedPeers[remotePeerId] = { call: call };
+
+      call.on('stream', (remoteStream) => {
+        // Buat elemen audio baru untuk orang ini
+        let audioEl = document.getElementById(`audio_${remotePeerId}`);
+        if (!audioEl) {
+          audioEl = document.createElement('audio');
+          audioEl.id = `audio_${remotePeerId}`;
+          audioEl.autoplay = true;
+          // Opsional: routing melalui AudioContext untuk ditambahkan efek statis HT masuk
+          // Namun untuk kesederhanaan dan performa mobile, kita gunakan tag HTML Audio biasa.
+          audioContainer.appendChild(audioEl);
+        }
+        audioEl.srcObject = remoteStream;
+      });
+
+      call.on('close', () => removePeer(remotePeerId));
+      call.on('error', () => removePeer(remotePeerId));
+    }
+
+    function removePeer(id) {
+      if (connectedPeers[id]) {
+        connectedPeers[id].call.close();
+        delete connectedPeers[id];
+      }
+      const audioEl = document.getElementById(`audio_${id}`);
+      if (audioEl) audioEl.remove();
       
-      // Munculkan popup pengaturan jika ini kali pertama user masuk tanpa query jalur
-      if(!ambilJalurDariUrl() && !localStorage.getItem('ht_kp_nama')) {
-         setTimeout(() => {
-           buatQRCode();
-           ui.modalPengaturan.classList.remove('hidden');
-         }, 1000);
+      delete roomMembers[id];
+      updateUserListUI();
+    }
+
+    // 5. USER INTERFACE & PTT LOGIC
+    function updateUserListUI() {
+      userList.innerHTML = '';
+      let count = 0;
+      
+      for (const [id, data] of Object.entries(roomMembers)) {
+        count++;
+        const isMe = (id === myPeerId);
+        const li = document.createElement('li');
+        li.className = `flex items-center justify-between p-2 rounded bg-tactical-900 border ${data.isTalking ? 'border-radio-led bg-emerald-900/30' : 'border-tactical-700'} transition-colors`;
+        
+        li.innerHTML = `
+          <div class="flex items-center gap-2">
+            <i class="fa-solid ${isMe ? 'fa-user' : 'fa-headset'} ${data.isTalking ? 'text-radio-led animate-pulse' : 'text-tactical-500'} text-[10px]"></i>
+            <span class="text-xs font-bold ${data.isTalking ? 'text-radio-led' : 'text-gray-300'}">${data.nickname} ${isMe ? '(You)' : ''}</span>
+          </div>
+          ${data.isTalking ? '<i class="fa-solid fa-volume-high text-radio-led text-[10px] animate-pulse"></i>' : ''}
+        `;
+        userList.appendChild(li);
       }
-    };
+      userCount.innerText = `${count} P`;
+    }
+
+    function setLed(state) {
+      // Cek apakah kita sedang TX, jangan override TX dengan RX
+      if (isTransmitting && state !== 'TX') return; 
+
+      ledIndicator.className = 'w-4 h-4 rounded-full border border-black shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)]';
+      if (state === 'TX') {
+        ledIndicator.classList.add('bg-radio-ledTx', 'shadow-[0_0_10px_rgba(239,68,68,0.8)]');
+      } else if (state === 'RX') {
+        ledIndicator.classList.add('bg-radio-led', 'shadow-[0_0_10px_rgba(16,185,129,0.8)]');
+      } else {
+        ledIndicator.classList.add('bg-radio-ledOff');
+      }
+    }
+
+    // Logika PTT (Push To Talk)
+    function startTransmit(e) {
+      if (e) e.preventDefault();
+      if (isTransmitting || !localAudioTrack) return;
+      
+      isTransmitting = true;
+      btnPTT.classList.add('active-tx');
+      
+      // 1. Unmute mic
+      localAudioTrack.enabled = true;
+      
+      // 2. Play start beep
+      playHTBeep('start');
+      
+      // 3. Nyalakan LED Merah (TX)
+      setLed('TX');
+
+      // 4. Broadcast via MQTT bahwa kita bicara
+      if(mqttClient) {
+        mqttClient.publish(`htweb/signal/${currentRoom}`, JSON.stringify({
+          type: 'tx_start',
+          peerId: myPeerId
+        }));
+      }
+
+      // Update UI sendiri
+      if (roomMembers[myPeerId]) roomMembers[myPeerId].isTalking = true;
+      updateUserListUI();
+    }
+
+    function stopTransmit(e) {
+      if (e) e.preventDefault();
+      if (!isTransmitting || !localAudioTrack) return;
+      
+      isTransmitting = false;
+      btnPTT.classList.remove('active-tx');
+      
+      // 1. Mute mic
+      localAudioTrack.enabled = false;
+      
+      // 2. Play end beep (Roger)
+      playHTBeep('end');
+      
+      // 3. Matikan LED
+      setLed('OFF');
+
+      // 4. Broadcast berhenti
+      if(mqttClient) {
+        mqttClient.publish(`htweb/signal/${currentRoom}`, JSON.stringify({
+          type: 'tx_end',
+          peerId: myPeerId
+        }));
+      }
+
+      // Update UI sendiri
+      if (roomMembers[myPeerId]) roomMembers[myPeerId].isTalking = false;
+      updateUserListUI();
+    }
+
+    // Bind Event Listeners untuk PTT (Support Mouse & Touch)
+    btnPTT.addEventListener('mousedown', startTransmit);
+    btnPTT.addEventListener('touchstart', startTransmit, {passive: false});
+    
+    window.addEventListener('mouseup', stopTransmit);
+    window.addEventListener('touchend', stopTransmit);
+
+    // Mencegah menu konteks saat menahan tombol di mobile
+    btnPTT.addEventListener('contextmenu', e => e.preventDefault());
+
+    // Utilities Buttons
+    document.getElementById('btnCopyRoom').addEventListener('click', () => {
+      const url = window.location.origin + window.location.pathname + '?freq=' + currentRoom;
+      const dummy = document.createElement('input');
+      document.body.appendChild(dummy);
+      dummy.value = url;
+      dummy.select();
+      document.execCommand('copy');
+      document.body.removeChild(dummy);
+      alert('Link Frekuensi disalin!\nBagikan ke teman untuk masuk room yang sama.');
+    });
+
+    document.getElementById('btnLeave').addEventListener('click', () => {
+      if(mqttClient) {
+        mqttClient.publish(`htweb/room/${currentRoom}`, JSON.stringify({
+          type: 'leave',
+          peerId: myPeerId
+        }));
+        mqttClient.end();
+      }
+      if(peer) peer.destroy();
+      
+      window.location.reload(); // Refresh untuk kembali ke setup
+    });
+
+    // Handle close window
+    window.addEventListener('beforeunload', () => {
+      if(mqttClient && myPeerId) {
+        mqttClient.publish(`htweb/room/${currentRoom}`, JSON.stringify({
+          type: 'leave',
+          peerId: myPeerId
+        }));
+      }
+    });
+
   </script>
 </body>
 </html>
